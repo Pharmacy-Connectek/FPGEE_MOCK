@@ -1719,6 +1719,21 @@ window.addEventListener("resize",()=>{
     loadUserHistory().then(h=>renderChart(h));
   }
 });
+
+/* ================================================================
+   EXPOSE FUNCTIONS TO GLOBAL SCOPE
+   Required because <script type="module"> creates a private scope.
+   HTML onclick/onsubmit attributes need functions on window.
+================================================================ */
+window.handleLogin       = handleLogin;
+window.handleRegister    = handleRegister;
+window.logout            = logout;
+window.switchTab         = switchTab;
+window.scrollToAuth      = scrollToAuth;
+window.startTest         = startTest;
+window.navigateQ         = navigateQ;
+window.confirmSubmit     = confirmSubmit;
+window.returnToDashboard = returnToDashboard;
 </script>
 </body>
 </html>

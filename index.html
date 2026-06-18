@@ -4,7 +4,33 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Connectek RX — FPGEE Test Series</title>
+
+<!-- ============================================================
+  FIREBASE SDK (v9 compat — works as CDN module without a bundler)
+  SETUP INSTRUCTIONS:
+  1. Go to https://console.firebase.google.com/ and create a project
+  2. Enable Authentication → Email/Password sign-in method
+  3. Create a Firestore Database (start in production mode, add rules below)
+  4. Go to Project Settings → Your apps → Add Web App
+  5. Copy your firebaseConfig object and paste it below, replacing the placeholder values
+  
+  FIRESTORE SECURITY RULES (paste in Firebase Console → Firestore → Rules):
+  
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      match /users/{userId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+============================================================ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
 <style>
+
   /* ============================================================
      DESIGN TOKENS
      Palette: Navy (#0D2149), Sky (#2B6CB0), Teal Accent (#0EA5A0),
@@ -518,25 +544,42 @@
     #test-topbar { height: auto; padding: 12px 5vw; flex-wrap: wrap; gap: 10px; }
     #dash-main { padding: 24px 4vw 40px; }
   }
+
+/* Loading overlay */
+#loading-overlay {
+  position: fixed; inset: 0; background: var(--navy);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; flex-direction: column; gap: 16px;
+}
+.loader-logo { font-size: 2rem; font-weight: 800; color: #fff; letter-spacing: -1px; }
+.loader-logo span { color: var(--teal); }
+.loader-spinner {
+  width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: var(--teal); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { color: rgba(255,255,255,0.6); font-size: 0.85rem; }
 </style>
 </head>
 <body>
 
-<!-- ================================================================
-     TOAST CONTAINER
-================================================================ -->
+<!-- Loading Overlay -->
+<div id="loading-overlay">
+  <div class="loader-logo">Connectek <span>RX</span></div>
+  <div class="loader-spinner"></div>
+  <div class="loader-text">Connecting to your account...</div>
+</div>
+
+<!-- TOAST CONTAINER -->
 <div id="toast-container"></div>
 
-<!-- ================================================================
-     CONFIRM MODAL
-================================================================ -->
+<!-- CONFIRM MODAL -->
 <div id="modal-overlay" class="hidden">
   <div class="modal-box">
     <div class="modal-icon">⚠️</div>
     <div class="modal-title">Submit Exam?</div>
-    <div class="modal-body" id="modal-body-text">
-      Are you sure you want to submit your exam? You cannot change your answers after submission.
-    </div>
+    <div class="modal-body" id="modal-body-text">Are you sure you want to submit your exam?</div>
     <div class="modal-footer">
       <button class="btn btn-outline" id="modal-cancel-btn">Go Back</button>
       <button class="btn btn-danger" id="modal-confirm-btn">Yes, Submit</button>
@@ -547,8 +590,7 @@
 <!-- ================================================================
      PAGE: LANDING
 ================================================================ -->
-<div id="page-landing">
-  <!-- Header -->
+<div id="page-landing" class="hidden">
   <header id="landing-header">
     <div class="logo-text">Connectek <span>RX</span></div>
     <div id="header-auth-btns">
@@ -557,7 +599,6 @@
     </div>
   </header>
 
-  <!-- Hero -->
   <section id="hero">
     <div class="hero-content">
       <p class="hero-eyebrow">&#x2B50; FPGEE Preparation Platform</p>
@@ -565,20 +606,20 @@
       <p class="hero-subtitle">
         Connectek RX brings you exam-grade test series that mirror the real FPGEE — 200 questions per set,
         detailed analytics, and instant answer review to guide your preparation.
+        Your progress is saved to the cloud so you can study from any device.
       </p>
       <div class="hero-stats">
         <div class="stat-pill"><span class="stat-num">2</span> Test Series</div>
         <div class="stat-pill"><span class="stat-num">200</span> Q / Test</div>
         <div class="stat-pill"><span class="stat-num">3h</span> Per Exam</div>
-        <div class="stat-pill"><span class="stat-num">100%</span> Free</div>
+        <div class="stat-pill"><span class="stat-num">☁️</span> Cloud Sync</div>
       </div>
       <div class="hero-cta">
-        <button class="btn btn-teal" onclick="scrollToAuth('register')" style="padding:13px 28px;font-size:1rem;">Start for Free</button>
+        <button class="btn btn-teal" onclick="scrollToAuth('register')" style="padding:13px 28px;font-size:1rem;">Create Free Account</button>
         <button class="btn btn-outline" onclick="scrollToAuth('login')" style="border-color:rgba(255,255,255,0.4);color:#fff;padding:13px 28px;font-size:1rem;">I have an account</button>
       </div>
     </div>
 
-    <!-- Auth Card -->
     <div class="hero-auth">
       <div class="auth-card" id="auth-card">
         <div class="auth-tabs">
@@ -586,7 +627,6 @@
           <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Create Account</button>
         </div>
 
-        <!-- LOGIN FORM -->
         <form class="auth-form" id="form-login" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label for="login-email">Email Address</label>
@@ -597,10 +637,9 @@
             <input type="password" id="login-pass" placeholder="••••••••" required />
           </div>
           <div class="form-error" id="login-error"></div>
-          <button type="submit" class="btn btn-primary auth-submit">Login to Dashboard</button>
+          <button type="submit" class="btn btn-primary auth-submit" id="login-btn">Login to Dashboard</button>
         </form>
 
-        <!-- REGISTER FORM -->
         <form class="auth-form hidden" id="form-register" onsubmit="handleRegister(event)">
           <div class="form-group">
             <label for="reg-name">Full Name</label>
@@ -615,48 +654,23 @@
             <input type="password" id="reg-pass" placeholder="Min. 6 characters" required minlength="6" />
           </div>
           <div class="form-error" id="reg-error"></div>
-          <button type="submit" class="btn btn-teal auth-submit">Create Account</button>
+          <button type="submit" class="btn btn-teal auth-submit" id="reg-btn">Create Account</button>
         </form>
       </div>
     </div>
   </section>
 
-  <!-- Features -->
   <section id="features">
     <p class="section-eyebrow">Why Connectek RX?</p>
     <h2 class="section-title">Everything you need to pass the FPGEE</h2>
-    <p class="section-subtitle">Our platform is built specifically for foreign pharmacy graduates preparing for the NABP equivalency exam.</p>
+    <p class="section-subtitle">Built for foreign pharmacy graduates preparing for the NABP equivalency exam. Study from any device — your progress syncs automatically.</p>
     <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">📋</div>
-        <h3>Exam-Realistic Questions</h3>
-        <p>200 questions per test crafted to reflect FPGEE difficulty, covering all major pharmaceutical science domains.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⏱️</div>
-        <h3>Timed Exam Mode</h3>
-        <p>A 3-hour countdown timer and distraction-free interface replicates real exam conditions to build stamina.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h3>Score Analytics</h3>
-        <p>Visual score progression charts across all attempts so you can see how much you've improved over time.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <h3>Detailed Answer Review</h3>
-        <p>After each test, review every question with your response and the correct answer highlighted side-by-side.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📈</div>
-        <h3>Attempt History</h3>
-        <p>Your full test history — scores, dates, and time taken — saved automatically to track long-term progress.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔒</div>
-        <h3>Private & Secure</h3>
-        <p>Your data stays in your browser. No server, no tracking — just you and your preparation.</p>
-      </div>
+      <div class="feature-card"><div class="feature-icon">📋</div><h3>Exam-Realistic Questions</h3><p>200 FPGEE-style questions per test covering Pharmacology, Pharmaceutical Sciences, and Pharmacy Practice.</p></div>
+      <div class="feature-card"><div class="feature-icon">☁️</div><h3>Cloud-Synced Progress</h3><p>Log in from any device — phone, tablet, or laptop. Your scores and history are always available.</p></div>
+      <div class="feature-card"><div class="feature-icon">⏱️</div><h3>Timed Exam Mode</h3><p>3-hour countdown timer and distraction-free interface replicates real FPGEE exam conditions.</p></div>
+      <div class="feature-card"><div class="feature-icon">📊</div><h3>Score Analytics</h3><p>Visual score progression charts across all attempts so you can measure your improvement over time.</p></div>
+      <div class="feature-card"><div class="feature-icon">🔍</div><h3>Detailed Answer Review</h3><p>After each test, review every question with your response and the correct answer side by side.</p></div>
+      <div class="feature-card"><div class="feature-icon">🔒</div><h3>Secure & Private</h3><p>Your data is protected by Firebase Authentication and Firestore security rules — only you can see your results.</p></div>
     </div>
   </section>
 
@@ -680,15 +694,11 @@
       <button class="btn btn-outline" style="margin-left:12px;border-color:rgba(255,255,255,0.3);color:#fff;padding:8px 16px;" onclick="logout()">Logout</button>
     </div>
   </header>
-
   <main id="dash-main">
-    <!-- Available Tests -->
     <div style="margin-bottom:44px;">
       <h2 class="dash-section-title">📚 Available Test Series</h2>
       <div id="test-cards-grid"></div>
     </div>
-
-    <!-- Score Chart -->
     <div id="analytics-section">
       <h2 class="dash-section-title">📊 Score Progression</h2>
       <div id="chart-container">
@@ -697,8 +707,6 @@
         <div class="chart-empty hidden" id="chart-empty">Complete at least one test to see your score chart.</div>
       </div>
     </div>
-
-    <!-- History -->
     <div id="history-section">
       <h2 class="dash-section-title">🗂️ Attempt History</h2>
       <div id="history-container"></div>
@@ -717,19 +725,13 @@
     </div>
     <div id="test-timer">⏱ 03:00:00</div>
   </div>
-
   <div id="test-body">
-    <!-- Question number palette -->
     <div id="q-palette-wrap"></div>
-
-    <!-- Question card -->
     <div id="question-card">
       <div class="q-meta" id="q-meta">Question 1 of 200</div>
-      <div class="q-text" id="q-text">Loading question...</div>
+      <div class="q-text" id="q-text">Loading...</div>
       <div class="q-options" id="q-options"></div>
     </div>
-
-    <!-- Navigation -->
     <div id="test-nav">
       <div class="test-nav-left">
         <button class="btn btn-outline" id="btn-prev" onclick="navigateQ(-1)">&#8592; Previous</button>
@@ -748,347 +750,666 @@
     <div class="logo-text">Connectek <span>RX</span> — <span style="color:rgba(255,255,255,0.7);font-weight:500;font-size:0.95rem;">Exam Results</span></div>
   </div>
   <div id="results-body">
-    <!-- Score Hero -->
     <div class="results-hero">
       <div class="results-icon" id="res-icon">🎉</div>
-      <div class="results-verdict" id="res-verdict">Excellent Performance!</div>
+      <div class="results-verdict" id="res-verdict">Great Job!</div>
       <div class="results-score-big" id="res-score-big">0 <span>/ 200</span></div>
       <div class="results-pct" id="res-pct">0% Correct</div>
       <div class="results-time" id="res-time">Time Taken: 00:00</div>
     </div>
-
-    <!-- Breakdown -->
     <div class="results-breakdown">
-      <div class="breakdown-card">
-        <div class="breakdown-num correct" id="res-correct">0</div>
-        <div class="breakdown-label">✅ Correct</div>
-      </div>
-      <div class="breakdown-card">
-        <div class="breakdown-num wrong" id="res-wrong">0</div>
-        <div class="breakdown-label">❌ Incorrect</div>
-      </div>
-      <div class="breakdown-card">
-        <div class="breakdown-num skip" id="res-skip">0</div>
-        <div class="breakdown-label">⬜ Unattempted</div>
-      </div>
+      <div class="breakdown-card"><div class="breakdown-num correct" id="res-correct">0</div><div class="breakdown-label">✅ Correct</div></div>
+      <div class="breakdown-card"><div class="breakdown-num wrong" id="res-wrong">0</div><div class="breakdown-label">❌ Incorrect</div></div>
+      <div class="breakdown-card"><div class="breakdown-num skip" id="res-skip">0</div><div class="breakdown-label">⬜ Unattempted</div></div>
     </div>
-
-    <!-- Answers Review -->
     <div id="answers-review">
       <div class="review-title">📝 Question-wise Review</div>
       <div id="review-list"></div>
     </div>
-
-    <!-- Return button -->
     <div style="text-align:center;margin-top:10px;">
       <button class="btn btn-primary" style="padding:14px 34px;font-size:1rem;" onclick="returnToDashboard()">&#8592; Return to Dashboard</button>
     </div>
   </div>
 </div>
 
-<!-- ================================================================
-     JAVASCRIPT
-================================================================ -->
 <script>
 'use strict';
 
 /* ================================================================
-   MOCK QUESTION DATABASE
-   — 5 real sample FPGEE pharmacy questions per test series are
-     provided below. Paste the remaining 195 questions for each
-     test in the respective arrays following the same object format:
-     {
-       question: "Question text here",
-       options: ["Option A", "Option B", "Option C", "Option D"],
-       answer: 0   // index of correct option (0=A, 1=B, 2=C, 3=D)
-     }
+   FIREBASE CONFIGURATION
+   Replace ALL values below with your own Firebase project config.
+   Get it from: Firebase Console → Project Settings → Your Apps → SDK setup
 ================================================================ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyBqEiZqM8gA5oukNQey4OnYp4aK4DwXzD8",
+  authDomain:        "connectek-rx-success.firebaseapp.com",
+  projectId:         "connectek-rx-success",
+  storageBucket:     "connectek-rx-success.firebasestorage.app",
+  messagingSenderId: "336583846088",
+  appId:             "1:336583846088:web:0eca33afae837863cd5dfd"
+  measurementId:     "G-0M3BE154GB"
+};
 
+/* Initialize Firebase */
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ================================================================
+   FPGEE QUESTION BANK — TEST SERIES 1 (200 Questions)
+   Pharmacology | Pharmaceutical Sciences | Pharmacy Practice
+================================================================ */
+const QUESTIONS_T1 = [
+      {question:"Which class of antibiotics inhibits bacterial cell wall synthesis by binding to penicillin-binding proteins (PBPs)?",options:["Fluoroquinolones", "Beta-lactams", "Aminoglycosides", "Macrolides"],answer:1},
+      {question:"A patient is prescribed warfarin and begins taking rifampin for tuberculosis treatment. Which pharmacokinetic interaction is the most clinically significant?",options:["Rifampin inhibits CYP2C9, increasing warfarin levels", "Rifampin induces CYP2C9, decreasing warfarin levels and increasing clotting risk", "Rifampin displaces warfarin from plasma protein binding sites", "Rifampin reduces renal clearance of warfarin"],answer:1},
+      {question:"The Henderson-Hasselbalch equation predicts that a weak acid with pKa = 4.4 at blood pH 7.4 will be:",options:["Approximately 50% ionized", "Approximately 10% ionized", "Greater than 99% ionized", "Approximately 1% ionized"],answer:2},
+      {question:"Which neurotransmitter is primarily deficient in Parkinson disease?",options:["Acetylcholine", "Serotonin", "Dopamine", "GABA"],answer:2},
+      {question:"A prescription for methotrexate 2.5 mg for rheumatoid arthritis is received. The most important counseling point is:",options:["Take daily for best results", "Avoid excessive sun exposure", "Take supplemental folic acid to reduce toxicity", "Avoid taking with food"],answer:2},
+      {question:"Which opioid analgesic is considered safest in patients with renal failure because it lacks active metabolites?",options:["Morphine", "Codeine", "Fentanyl", "Meperidine"],answer:2},
+      {question:"The Vmax in Michaelis-Menten enzyme kinetics represents:",options:["The substrate concentration at half-maximal velocity", "The maximum rate of the enzymatic reaction", "The affinity of the enzyme for the substrate", "The rate at which product is formed"],answer:1},
+      {question:"Which antihypertensive class is absolutely contraindicated in pregnancy due to teratogenicity?",options:["Beta-blockers", "Calcium channel blockers", "ACE inhibitors", "Methyldopa"],answer:2},
+      {question:"The primary mechanism of action of statins (HMG-CoA reductase inhibitors) is:",options:["Inhibition of bile acid reabsorption", "Inhibition of intestinal cholesterol absorption", "Inhibition of hepatic cholesterol synthesis", "Activation of lipoprotein lipase"],answer:2},
+      {question:"Which route of administration completely bypasses first-pass metabolism?",options:["Oral", "Sublingual", "Rectal", "Buccal"],answer:1},
+      {question:"A drug has a half-life of 8 hours. Approximately how long will it take to reach steady-state plasma concentrations?",options:["8 hours", "16 hours", "40 hours", "80 hours"],answer:2},
+      {question:"Digoxin toxicity is potentiated by hypokalemia because:",options:["Potassium competes with digoxin for Na+/K+-ATPase binding sites", "Potassium is required for digoxin renal excretion", "Low potassium increases digoxin absorption", "Potassium inhibits digoxin metabolism"],answer:0},
+      {question:"Which type of drug interaction is described when two CNS depressants produce effects greater than additive?",options:["Antagonism", "Summation", "Synergism (potentiation)", "Tachyphylaxis"],answer:2},
+      {question:"The bioavailability of an oral drug is 40%. To achieve the same plasma AUC as a 50 mg IV dose, the oral dose required would be:",options:["50 mg", "80 mg", "100 mg", "125 mg"],answer:3},
+      {question:"Which receptor type is primarily responsible for the analgesic and euphoric effects of opioids?",options:["Kappa", "Delta", "Mu", "Sigma"],answer:2},
+      {question:"Loop diuretics such as furosemide act at which segment of the nephron?",options:["Proximal convoluted tubule", "Thick ascending limb of the Loop of Henle", "Distal convoluted tubule", "Collecting duct"],answer:1},
+      {question:"Which antibiotic class works by inhibiting the 30S ribosomal subunit, thereby blocking protein synthesis?",options:["Macrolides", "Tetracyclines", "Fluoroquinolones", "Glycopeptides"],answer:1},
+      {question:"A patient taking lithium is started on ibuprofen. The primary concern is:",options:["Decreased lithium levels due to increased renal clearance", "Increased lithium levels due to decreased renal clearance", "Increased risk of lithium-induced thyroid toxicity", "Decreased ibuprofen efficacy"],answer:1},
+      {question:"Which of the following best describes zero-order kinetics?",options:["Elimination is proportional to drug concentration", "A constant fraction of drug is eliminated per unit time", "A constant amount of drug is eliminated per unit time", "Elimination rate doubles with each dose"],answer:2},
+      {question:"Heparin's primary mechanism of anticoagulation involves:",options:["Direct inhibition of thrombin and Factor Xa", "Potentiation of antithrombin III, indirectly inhibiting thrombin and Factor Xa", "Inhibition of Vitamin K-dependent clotting factor synthesis", "Inhibition of platelet aggregation via COX-1"],answer:1},
+      {question:"Which antifungal agent works by binding to ergosterol in fungal cell membranes, creating pores?",options:["Fluconazole", "Caspofungin", "Amphotericin B", "Terbinafine"],answer:2},
+      {question:"The therapeutic drug monitoring target trough level for vancomycin in serious infections (traditional dosing) is:",options:["1–5 mcg/mL", "5–10 mcg/mL", "15–20 mcg/mL", "25–30 mcg/mL"],answer:2},
+      {question:"A patient with atrial fibrillation is started on amiodarone. Which side effect requires long-term monitoring?",options:["Hyperkalemia", "Pulmonary toxicity and thyroid dysfunction", "Ototoxicity", "Nephrotoxicity"],answer:1},
+      {question:"Which beta-blocker is preferred in patients with asthma who also need heart rate control?",options:["Propranolol", "Carvedilol", "Metoprolol (cardioselective, use cautiously)", "Nadolol"],answer:2},
+      {question:"The first-line treatment for Helicobacter pylori eradication according to standard triple therapy includes:",options:["Omeprazole + amoxicillin + clarithromycin", "Ranitidine + metronidazole + tetracycline", "Pantoprazole + ciprofloxacin + amoxicillin", "Famotidine + metronidazole + clarithromycin"],answer:0},
+      {question:"Which excipient acts as an anionic surfactant and is commonly used as a solubility enhancer?",options:["Polyethylene glycol (PEG)", "Sodium lauryl sulfate (SLS)", "Microcrystalline cellulose (MCC)", "Magnesium stearate"],answer:1},
+      {question:"A tablet formulation requires disintegration within 30 minutes. Which excipient is most commonly added to achieve this?",options:["Lactose", "Sodium starch glycolate (superdisintegrant)", "Talc", "Hydroxypropyl methylcellulose (HPMC)"],answer:1},
+      {question:"Osmotic pressure of a pharmaceutical solution is most accurately determined by:",options:["pH measurement", "Measurement of the freezing point depression", "Conductivity measurement", "Viscosity measurement"],answer:1},
+      {question:"Which polymer is most commonly used in enteric coating to protect the drug from stomach acid?",options:["Ethyl cellulose", "Hydroxypropyl methylcellulose (HPMC)", "Cellulose acetate phthalate (CAP)", "Povidone (PVP)"],answer:2},
+      {question:"The Noyes-Whitney equation describes the rate of dissolution. Which factor, if increased, would most increase dissolution rate?",options:["Particle size", "Drug solubility in dissolution medium", "Viscosity of the dissolution medium", "Diffusion layer thickness"],answer:1},
+      {question:"According to the Biopharmaceutics Classification System (BCS), a drug with high solubility and low permeability is classified as:",options:["Class I", "Class II", "Class III", "Class IV"],answer:2},
+      {question:"Which type of isomerism involves non-superimposable mirror images of a molecule?",options:["Geometric isomerism", "Conformational isomerism", "Enantiomerism", "Constitutional isomerism"],answer:2},
+      {question:"The process of converting a prodrug to its active form in the body is an example of:",options:["Phase I metabolism (bioactivation)", "Phase II metabolism (conjugation)", "Enterohepatic circulation", "Protein binding"],answer:0},
+      {question:"Which CYP450 isoenzyme is responsible for metabolizing the largest percentage of clinically used drugs?",options:["CYP1A2", "CYP2C9", "CYP2D6", "CYP3A4"],answer:3},
+      {question:"Phenytoin exhibits non-linear (Michaelis-Menten) pharmacokinetics. This means at therapeutic doses:",options:["Doubling the dose doubles the plasma level", "Small dose increases can cause disproportionately large increases in plasma level", "Elimination is proportional to concentration", "Half-life is constant regardless of dose"],answer:1},
+      {question:"Which of the following is a selective serotonin reuptake inhibitor (SSRI)?",options:["Venlafaxine", "Bupropion", "Fluoxetine", "Mirtazapine"],answer:2},
+      {question:"The antidote for acetaminophen overdose is:",options:["Flumazenil", "N-acetylcysteine", "Naloxone", "Physostigmine"],answer:1},
+      {question:"Which anticoagulant can be used in heparin-induced thrombocytopenia (HIT)?",options:["Low molecular weight heparin (enoxaparin)", "Warfarin (immediately)", "Argatroban (direct thrombin inhibitor)", "Clopidogrel"],answer:2},
+      {question:"Which vitamin is required as a cofactor for the carboxylation of clotting factors II, VII, IX, and X?",options:["Vitamin A", "Vitamin C", "Vitamin K", "Vitamin D"],answer:2},
+      {question:"An aminoglycoside antibiotic is being dosed once daily. The pharmacodynamic parameter that best predicts efficacy is:",options:["Time above MIC (T>MIC)", "AUC/MIC ratio", "Peak/MIC ratio (Cmax/MIC)", "Trough/MIC ratio"],answer:2},
+      {question:"Which immunosuppressant drug inhibits the enzyme inosine monophosphate dehydrogenase (IMPDH), thereby reducing B and T cell proliferation?",options:["Cyclosporine", "Tacrolimus", "Mycophenolate mofetil", "Sirolimus"],answer:2},
+      {question:"Cromolyn sodium is used as a prophylactic agent for asthma. Its mechanism of action is:",options:["Beta-2 agonism causing bronchodilation", "Inhibition of mast cell degranulation", "Muscarinic antagonism reducing secretions", "Leukotriene receptor antagonism"],answer:1},
+      {question:"Which agent is used to reverse benzodiazepine overdose?",options:["Naloxone", "Flumazenil", "Physostigmine", "N-acetylcysteine"],answer:1},
+      {question:"The proton pump inhibitors (e.g., omeprazole) are prodrugs that become active in:",options:["The bloodstream after absorption", "The duodenum at neutral pH", "The acidic canalicular space of parietal cells", "The liver during first-pass metabolism"],answer:2},
+      {question:"Which class of antimicrobial agent inhibits mycobacterial cell wall synthesis by targeting mycolic acid production?",options:["Fluoroquinolones", "Rifamycins", "Isoniazid", "Ethambutol"],answer:2},
+      {question:"Serotonin syndrome is most associated with the combination of which two drug classes?",options:["Opioids + benzodiazepines", "SSRIs + MAO inhibitors", "Beta-blockers + calcium channel blockers", "Statins + fibrates"],answer:1},
+      {question:"Which medication is the antidote for organophosphate poisoning?",options:["Pralidoxime + atropine", "Naloxone + flumazenil", "Physostigmine + propranolol", "Methylene blue + thiamine"],answer:0},
+      {question:"Clearance (CL) in pharmacokinetics is best defined as:",options:["The volume of plasma cleared of drug per unit time", "The ratio of dose to AUC", "The volume of distribution at steady state", "Both A and B are correct definitions"],answer:3},
+      {question:"Which antipsychotic is associated with the lowest risk of extrapyramidal side effects due to its low D2 receptor affinity?",options:["Haloperidol", "Risperidone", "Clozapine", "Fluphenazine"],answer:2},
+      {question:"Allopurinol treats gout by which mechanism?",options:["Promoting renal uric acid excretion", "Inhibiting xanthine oxidase, reducing uric acid production", "Blocking uric acid reabsorption at URAT1 transporter", "Inhibiting COX-2 to reduce inflammation"],answer:1},
+      {question:"The concept of pharmaceutical equivalence means two products have the same:",options:["Bioavailability", "Active ingredient, dose, and dosage form", "Clinical efficacy", "Pharmacokinetic profile"],answer:1},
+      {question:"A patient on phenelzine (MAO inhibitor) eats aged cheese high in tyramine. The expected reaction is:",options:["Serotonin syndrome", "Hypertensive crisis", "Orthostatic hypotension", "Severe hypoglycemia"],answer:1},
+      {question:"Which local anesthetic is an ester-type and is metabolized by plasma pseudocholinesterase?",options:["Lidocaine", "Bupivacaine", "Procaine", "Mepivacaine"],answer:2},
+      {question:"The therapeutic goal in treating status epilepticus with IV benzodiazepines is based on which pharmacodynamic property?",options:["Concentration-dependent killing", "GABA-A receptor potentiation to suppress neuronal firing", "Sodium channel blockade", "NMDA receptor antagonism"],answer:1},
+      {question:"Which drug class used for osteoporosis works by inhibiting osteoclastic bone resorption?",options:["Selective estrogen receptor modulators (SERMs)", "Bisphosphonates", "Teriparatide", "Calcium supplements"],answer:1},
+      {question:"The term 'therapeutic window' refers to:",options:["The time required to reach steady state", "The range of plasma concentrations between minimum effective concentration and minimum toxic concentration", "The time between drug administration and peak effect", "The duration of drug action"],answer:1},
+      {question:"Which type of pharmaceutical incompatibility occurs when drug molecules chemically react with each other?",options:["Physical incompatibility", "Therapeutic incompatibility", "Chemical incompatibility", "Microbiological incompatibility"],answer:2},
+      {question:"Insulin lispro is classified as a rapid-acting insulin analog. Its faster onset compared to regular insulin is due to:",options:["Increased protein binding", "Amino acid sequence modification that reduces self-aggregation", "A zinc formulation that delays absorption", "Increased lipid solubility"],answer:1},
+      {question:"Which antiviral drug inhibits influenza neuraminidase, preventing viral release from host cells?",options:["Acyclovir", "Oseltamivir", "Amantadine", "Ribavirin"],answer:1},
+      {question:"Drugs that are highly protein-bound have a characteristically:",options:["Large volume of distribution", "Small volume of distribution (confined to plasma)", "Rapid renal excretion", "High clearance rate"],answer:1},
+      {question:"Which drug is the antidote for opioid overdose?",options:["Flumazenil", "N-acetylcysteine", "Naloxone", "Protamine sulfate"],answer:2},
+      {question:"The principle of osmosis in pharmaceutical solutions states that water moves:",options:["From high solute concentration to low solute concentration", "From low solute concentration to high solute concentration", "Against the concentration gradient with energy", "Based on molecular weight of the solute"],answer:1},
+      {question:"Nitroglycerin is administered sublingually primarily because:",options:["It has better taste sublingually", "It avoids extensive first-pass hepatic metabolism", "It has better absorption from oral mucosa than stomach", "Both B and C are correct"],answer:3},
+      {question:"Which antibiotic inhibits bacterial DNA gyrase and topoisomerase IV?",options:["Macrolides", "Fluoroquinolones", "Tetracyclines", "Chloramphenicol"],answer:1},
+      {question:"A patient taking carbamazepine for epilepsy experiences decreased efficacy after a few months at the same dose. The most likely explanation is:",options:["Pharmacodynamic tolerance at sodium channels", "Autoinduction of CYP3A4 by carbamazepine, increasing its own metabolism", "Decreased gastrointestinal absorption", "Development of epilepsy resistance"],answer:1},
+      {question:"Neonates are more susceptible to chloramphenicol toxicity ('gray baby syndrome') because they:",options:["Have immature renal tubular secretion", "Have immature hepatic UDP-glucuronosyltransferase for conjugation", "Have increased BBB permeability", "Have increased plasma protein binding"],answer:1},
+      {question:"Sulfonamides act by competitively inhibiting which enzyme in bacteria?",options:["Dihydropteroate synthase (DHPS)", "Dihydrofolate reductase (DHFR)", "RNA polymerase", "Transpeptidase"],answer:0},
+      {question:"Trimethoprim works synergistically with sulfonamides because it inhibits:",options:["Dihydropteroate synthase (DHPS)", "Dihydrofolate reductase (DHFR)", "Thymidylate synthase", "DNA gyrase"],answer:1},
+      {question:"Which pharmacokinetic parameter is most important in determining the dosing interval of a drug?",options:["Volume of distribution", "Bioavailability", "Half-life (t½)", "Protein binding"],answer:2},
+      {question:"A critically ill patient requires continuous IV infusion of a drug. Steady-state concentration is directly proportional to:",options:["The infusion rate divided by clearance (Css = R0/CL)", "The infusion rate times the volume of distribution", "The half-life divided by the dose", "The bioavailability times the dose"],answer:0},
+      {question:"Sildenafil (Viagra) is contraindicated with nitrates because concurrent use causes:",options:["Dangerous hypertension", "Severe hypotension due to additive cGMP accumulation", "Increased risk of priapism", "Cardiac arrhythmia"],answer:1},
+      {question:"Which antiepileptic drug is the first choice for absence seizures?",options:["Phenytoin", "Carbamazepine", "Ethosuximide", "Phenobarbital"],answer:2},
+      {question:"The Clark's rule for pediatric dosing calculates the dose based on:",options:["Age", "Weight", "Height", "Body surface area"],answer:1},
+      {question:"Which class of diuretics is most likely to cause hypokalemia?",options:["Osmotic diuretics", "Carbonic anhydrase inhibitors", "Potassium-sparing diuretics", "Thiazide and loop diuretics"],answer:3},
+      {question:"Cholestyramine (a bile acid sequestrant) can decrease the absorption of co-administered drugs by:",options:["Chelating drug molecules in the gut", "Altering gut pH", "Inhibiting intestinal transport proteins", "Accelerating gastric emptying"],answer:0},
+      {question:"Which medication is used to treat hyperthyroidism by blocking thyroid hormone synthesis through inhibition of thyroid peroxidase?",options:["Levothyroxine", "Propylthiouracil (PTU)", "Radioactive iodine", "Potassium iodide"],answer:1},
+      {question:"The FDA pregnancy category (older system) that indicated evidence of fetal risk but benefits may outweigh risks was:",options:["Category A", "Category B", "Category C", "Category D"],answer:3},
+      {question:"Gentamicin exhibits concentration-dependent bactericidal activity. The pharmacodynamic index that best predicts its efficacy is:",options:["Time above MIC", "AUC/MIC", "Peak (Cmax)/MIC", "Trough/MIC"],answer:2},
+      {question:"Which excipient is commonly used as a glidant in tablet manufacturing to improve powder flow?",options:["Magnesium stearate", "Colloidal silicon dioxide (Aerosil)", "Microcrystalline cellulose", "Croscarmellose sodium"],answer:1},
+      {question:"Passive diffusion across a biological membrane is governed by Fick's law and depends on:",options:["Molecular weight only", "Concentration gradient, lipid solubility, and surface area", "Active transport proteins", "Energy in the form of ATP"],answer:1},
+      {question:"Which drug is the treatment of choice for Clostridium difficile infection in severe cases?",options:["Ampicillin", "Metronidazole", "Vancomycin (oral) or Fidaxomicin", "Ciprofloxacin"],answer:2},
+      {question:"A patient with hypertension and gout would least benefit from which antihypertensive class?",options:["ACE inhibitors", "Calcium channel blockers", "Thiazide diuretics (increase uric acid)", "Losartan (has uricosuric effect)"],answer:2},
+      {question:"Spironolactone is a potassium-sparing diuretic that works by:",options:["Blocking sodium channels in the collecting duct", "Antagonizing aldosterone receptors in the collecting duct", "Inhibiting Na+/K+/2Cl- cotransporter", "Inhibiting carbonic anhydrase"],answer:1},
+      {question:"Which anticancer drug is classified as an alkylating agent that forms crosslinks in DNA?",options:["Methotrexate", "Cyclophosphamide", "Vincristine", "Tamoxifen"],answer:1},
+      {question:"The term AUC (area under the curve) in pharmacokinetics represents:",options:["Peak drug concentration", "Total drug exposure over time", "Drug half-life", "Volume of distribution"],answer:1},
+      {question:"Which drug used for type 2 diabetes works by mimicking GLP-1, stimulating glucose-dependent insulin secretion?",options:["Metformin", "Glipizide", "Liraglutide", "Pioglitazone"],answer:2},
+      {question:"Rifampin's characteristic side effect of orange-red discoloration of body fluids should be communicated to patients to:",options:["Indicate the drug is working properly", "Prevent patient alarm and avoid staining of contact lenses", "Alert to liver toxicity", "Alert to kidney damage"],answer:1},
+      {question:"The loading dose of a drug is calculated to rapidly achieve the target plasma concentration. It is primarily determined by:",options:["Clearance and half-life", "Target concentration and volume of distribution", "Bioavailability and half-life", "Protein binding and clearance"],answer:1},
+      {question:"Which antidepressant class carries a black box warning for increased suicidality in children and young adults?",options:["Tricyclic antidepressants (TCAs) only", "All antidepressants (SSRIs, SNRIs, TCAs, etc.)", "MAO inhibitors only", "Atypical antipsychotics"],answer:1},
+      {question:"A patient is brought to the ER after a tricyclic antidepressant (TCA) overdose with QRS prolongation. Treatment includes:",options:["Flumazenil IV push", "Sodium bicarbonate IV", "Naloxone IV", "Activated charcoal only"],answer:1},
+      {question:"Clopidogrel is a prodrug activated by which enzyme?",options:["CYP3A4 only", "CYP2C19", "CYP2D6", "Esterases in plasma"],answer:1},
+      {question:"Poor metabolizers of CYP2C19 who take clopidogrel are at risk of:",options:["Clopidogrel toxicity due to drug accumulation", "Reduced antiplatelet effect due to inadequate prodrug activation", "Increased bleeding risk", "Severe hepatotoxicity"],answer:1},
+      {question:"The primary purpose of enteric coating a tablet is to:",options:["Mask unpleasant taste", "Prevent drug release in the stomach", "Improve tablet appearance", "Increase drug bioavailability"],answer:1},
+      {question:"Which calcium channel blocker class (dihydropyridines) is most selective for vascular smooth muscle?",options:["Verapamil", "Diltiazem", "Amlodipine", "Mibefradil"],answer:2},
+      {question:"When two drugs are mixed and the resulting therapeutic effect is equal to zero despite both drugs having individual effects, this is called:",options:["Synergism", "Additive effect", "Antagonism", "Potentiation"],answer:2},
+      {question:"Which enzyme is responsible for converting arachidonic acid to prostaglandins (the target of NSAIDs)?",options:["Lipoxygenase", "Cyclooxygenase (COX)", "Phospholipase A2", "Thromboxane synthase"],answer:1},
+      {question:"In asthma management, a short-acting beta-2 agonist (e.g., albuterol) is best classified as:",options:["Controller (daily preventive) therapy", "Reliever (rescue) therapy", "Steroid-sparing therapy", "Immunomodulatory therapy"],answer:1},
+      {question:"Metformin's primary mechanism of action in type 2 diabetes is:",options:["Stimulation of insulin secretion from pancreatic beta cells", "Inhibition of hepatic glucose production (gluconeogenesis) via AMPK activation", "Blocking intestinal glucose absorption", "Increasing peripheral glucose uptake via PPAR-gamma activation"],answer:1},
+      {question:"A drug with a narrow therapeutic index requires more frequent monitoring because:",options:["Small changes in dose produce large changes in effect with potential for toxicity", "It has a longer half-life", "It is more protein-bound than other drugs", "It undergoes extensive first-pass metabolism"],answer:0},
+      {question:"Corticosteroids (e.g., prednisone) produce all of the following side effects with long-term use EXCEPT:",options:["Osteoporosis", "Hyperglycemia", "Adrenal atrophy", "Hypotension"],answer:3},
+      {question:"Which antiretroviral drug class blocks HIV integration into the host cell genome?",options:["Nucleoside reverse transcriptase inhibitors (NRTIs)", "Protease inhibitors", "Integrase strand transfer inhibitors (INSTIs)", "Entry inhibitors"],answer:2},
+      {question:"Renal clearance of a drug equals:",options:["GFR × plasma drug concentration", "(GFR × fu) + tubular secretion − tubular reabsorption", "Volume of distribution × elimination rate constant", "Dose / AUC"],answer:1},
+      {question:"Which topical antifungal agent is effective for dermatophyte infections (ringworm, athlete's foot) by inhibiting squalene epoxidase?",options:["Clotrimazole", "Terbinafine", "Nystatin", "Fluconazole"],answer:1},
+      {question:"Phenobarbital produces its anticonvulsant effect primarily by:",options:["Blocking sodium channels", "Potentiating GABA-A receptor by increasing chloride channel opening duration", "Blocking calcium channels", "NMDA receptor antagonism"],answer:1},
+      {question:"Which parameter describes the fraction of drug that reaches the systemic circulation unchanged after oral administration?",options:["Volume of distribution", "Clearance", "Bioavailability (F)", "Elimination half-life"],answer:2},
+      {question:"Theophylline is a methylxanthine used for asthma. Its narrow therapeutic index requires monitoring. Which drug significantly increases theophylline toxicity?",options:["Amoxicillin", "Ciprofloxacin (CYP1A2 inhibitor)", "Prednisone", "Albuterol"],answer:1},
+      {question:"Warfarin therapy requires monitoring with which laboratory test?",options:["Activated partial thromboplastin time (aPTT)", "Prothrombin time/International Normalized Ratio (PT/INR)", "Bleeding time", "Platelet count"],answer:1},
+      {question:"Which antidiabetic medication class carries the risk of causing euglycemic diabetic ketoacidosis?",options:["Biguanides (metformin)", "Sulfonylureas", "SGLT2 inhibitors", "DPP-4 inhibitors"],answer:2},
+      {question:"The cytochrome P450 enzyme system is primarily located in:",options:["The kidney", "The small intestine", "The liver (and gut wall)", "The plasma"],answer:2},
+      {question:"A patient's creatinine clearance (CrCl) is 20 mL/min. How should the dose of a renally eliminated drug be adjusted?",options:["No adjustment needed", "Dose should be reduced or dosing interval extended", "Dose should be doubled to overcome reduced clearance", "Switch to a higher molecular weight formulation"],answer:1},
+      {question:"Which antibiotic class is associated with the 'Gray Baby Syndrome' in neonates?",options:["Aminoglycosides", "Fluoroquinolones", "Chloramphenicol", "Sulfonamides"],answer:2},
+      {question:"The term 'agonist' in pharmacology refers to a drug that:",options:["Blocks receptor and prevents agonist binding", "Binds receptor and produces a biological response", "Binds receptor without producing a response", "Reduces receptor sensitivity over time"],answer:1},
+      {question:"Which anti-epileptic drug is the drug of choice for trigeminal neuralgia?",options:["Phenytoin", "Carbamazepine", "Lamotrigine", "Gabapentin"],answer:1},
+      {question:"Which chemical bond is formed between a drug and its target receptor and is NOT reversible under physiological conditions?",options:["Ionic bond", "Hydrogen bond", "Van der Waals bond", "Covalent bond"],answer:3},
+      {question:"Dabigatran (direct thrombin inhibitor) does NOT require INR monitoring because:",options:["Its effects are highly variable", "It has a predictable pharmacokinetic profile requiring only renal function monitoring", "It has no anticoagulant effect at standard doses", "Patients on dabigatran never experience bleeding"],answer:1},
+      {question:"Which formulation strategy increases the solubility of a poorly water-soluble drug?",options:["Increasing particle size", "Using micronization or nanoparticle technology", "Using hydrophobic excipients", "Reducing the dissolution medium temperature"],answer:1},
+      {question:"Cholesterol biosynthesis occurs primarily in which organ?",options:["The intestine", "The kidney", "The liver", "The adipose tissue"],answer:2},
+      {question:"Torsades de pointes (a potentially fatal arrhythmia) is associated with drugs that:",options:["Block beta-adrenergic receptors", "Prolong the QT interval (block hERG potassium channels)", "Block sodium channels", "Activate adenosine receptors"],answer:1},
+      {question:"The pharmacological effect of atropine at the heart is:",options:["Bradycardia via M2 receptor blockade", "Tachycardia via M2 receptor blockade", "Bradycardia via nicotinic receptor stimulation", "No effect on heart rate"],answer:1},
+      {question:"Succinylcholine is a depolarizing neuromuscular blocking agent. Its short duration is due to:",options:["Rapid hepatic metabolism", "Rapid hydrolysis by plasma pseudocholinesterase", "Rapid renal excretion", "Receptor desensitization"],answer:1},
+      {question:"N-acetyl-p-benzoquinoneimine (NAPQI) is the hepatotoxic metabolite of acetaminophen produced by:",options:["Phase II glucuronidation", "Phase I oxidation via CYP2E1 and CYP3A4", "Sulfate conjugation", "Glycine conjugation"],answer:1},
+      {question:"A patient with HER2-positive breast cancer is prescribed trastuzumab. Its mechanism of action is:",options:["Cytotoxic alkylation of DNA", "Inhibition of HER2 receptor tyrosine kinase activity via monoclonal antibody binding", "Estrogen receptor antagonism", "Topoisomerase II inhibition"],answer:1},
+      {question:"Systemic bioavailability from inhaled medications (e.g., inhaled corticosteroids) is minimized by:",options:["First-pass metabolism in the intestine", "Local action in the airways and first-pass pulmonary and hepatic metabolism", "Rapid renal excretion", "Poor solubility in mucus"],answer:1},
+      {question:"Which drug, used in alcohol dependence, causes a severe reaction (flushing, nausea, vomiting) when alcohol is consumed?",options:["Naltrexone", "Acamprosate", "Disulfiram", "Buprenorphine"],answer:2},
+      {question:"Methotrexate treats rheumatoid arthritis via which mechanism in addition to folate antagonism?",options:["TNF-alpha inhibition", "Inhibition of adenosine deaminase, increasing anti-inflammatory adenosine", "COX-2 selective inhibition", "IL-6 receptor blockade"],answer:1},
+      {question:"A tablet must have a friability of less than what percent loss according to USP standards?",options:["0.1%", "1.0%", "5.0%", "10.0%"],answer:1},
+      {question:"The term 'generic drug' as approved by the FDA must demonstrate which of the following with the brand drug?",options:["Same clinical efficacy in randomized controlled trials", "Pharmaceutical equivalence and bioequivalence", "Identical manufacturing processes", "Same inactive ingredients (excipients)"],answer:1},
+      {question:"Which class of drugs binds to and activates peroxisome proliferator-activated receptor gamma (PPAR-γ), improving insulin sensitivity?",options:["Biguanides", "Thiazolidinediones (glitazones)", "Alpha-glucosidase inhibitors", "Meglitinides"],answer:1},
+      {question:"Benzodiazepines enhance GABA-A receptor function by:",options:["Increasing the frequency of chloride channel opening", "Increasing the duration of chloride channel opening", "Replacing GABA at its binding site", "Increasing the conductance of each chloride channel opening"],answer:0},
+      {question:"Erythromycin inhibits CYP3A4. A patient on erythromycin starts taking simvastatin. The expected clinical consequence is:",options:["Reduced simvastatin levels and decreased efficacy", "Elevated simvastatin levels and increased risk of myopathy/rhabdomyolysis", "No interaction because statins are renally cleared", "Reduced risk of cardiovascular events"],answer:1},
+      {question:"Which ophthalmic agent is a prostaglandin analog used first-line for open-angle glaucoma?",options:["Timolol", "Brimonidine", "Latanoprost", "Pilocarpine"],answer:2},
+      {question:"Zidovudine (AZT), a nucleoside reverse transcriptase inhibitor (NRTI), is incorporated into viral DNA and causes:",options:["Inhibition of viral protease cleavage", "Chain termination of viral DNA synthesis", "Inhibition of viral RNA packaging", "Blockade of viral integrase"],answer:1},
+      {question:"Which plant-derived taxane anticancer drug stabilizes microtubules and prevents cell division?",options:["Vincristine", "Paclitaxel", "Etoposide", "Bleomycin"],answer:1},
+      {question:"The Stokes-Einstein equation relates the diffusion coefficient of a particle to its:",options:["Temperature, viscosity of the medium, and particle size", "Molecular weight and polarity", "Concentration and pH", "Osmotic pressure and ionization"],answer:0},
+      {question:"Which drug is the first-line treatment for community-acquired pneumonia in otherwise healthy adults?",options:["Vancomycin", "Azithromycin or amoxicillin (depending on severity)", "Ciprofloxacin", "Clindamycin"],answer:1},
+      {question:"A patient taking potassium supplements starts taking an ACE inhibitor. The pharmacist should counsel about the risk of:",options:["Hypokalemia", "Hyperkalemia", "Hyponatremia", "Metabolic acidosis"],answer:1},
+      {question:"Which antihyperlipidemic agent specifically lowers triglycerides by activating lipoprotein lipase via PPAR-alpha?",options:["Statins", "Ezetimibe", "Fibrates (e.g., gemfibrozil)", "Niacin"],answer:2},
+      {question:"The Henderson-Hasselbalch equation for a weak base is: pH = pKa + log([base]/[acid]). At pH below the pKa of the drug, the drug will be:",options:["Predominantly unionized", "Predominantly ionized (protonated, positively charged)", "Equally ionized and unionized", "100% ionized"],answer:1},
+      {question:"The primary mechanism by which vaccines prevent infection is:",options:["Direct bacterial/viral killing", "Induction of immunological memory via B and T cell activation", "Blocking of pathogen adhesion receptors", "Innate immune stimulation only"],answer:1},
+      {question:"Which drug used for heart failure inhibits neprilysin (a neutral endopeptidase) in addition to ARB activity?",options:["Losartan", "Spironolactone", "Sacubitril/Valsartan (Entresto)", "Ivabradine"],answer:2},
+      {question:"Erythropoietin (EPO) is used pharmacologically to treat anemia in chronic kidney disease. It acts by:",options:["Inhibiting iron sequestration in macrophages", "Stimulating erythroid progenitor cells in bone marrow via EPO receptor", "Increasing absorption of iron from the gut", "Blocking hemoglobin degradation"],answer:1},
+      {question:"Which non-steroidal anti-inflammatory drug (NSAID) is COX-2 selective and carries a lower risk of GI ulcers?",options:["Ibuprofen", "Naproxen", "Celecoxib", "Indomethacin"],answer:2},
+      {question:"The primary adverse effect associated with aminoglycosides that requires audiological monitoring is:",options:["Nephrotoxicity", "Ototoxicity (cochlear and vestibular damage)", "Hepatotoxicity", "Bone marrow suppression"],answer:1},
+      {question:"Digoxin is used in atrial fibrillation to slow the ventricular rate. Its mechanism involves:",options:["Direct blocking of AV nodal calcium channels", "Vagomimetic effect (increased vagal tone) reducing AV conduction", "Beta-1 receptor blockade at the SA node", "Sodium channel blockade in atrial tissue"],answer:1},
+      {question:"Which drug class is the first-line pharmacological treatment for generalized anxiety disorder (GAD)?",options:["Benzodiazepines", "Buspirone", "SSRIs/SNRIs", "Hydroxyzine"],answer:2},
+      {question:"Which mineral is required as a cofactor for insulin action and glucose metabolism, and its deficiency impairs glycemic control?",options:["Calcium", "Zinc", "Chromium", "Magnesium"],answer:2},
+      {question:"A hypertensive patient with a prior myocardial infarction should preferably be treated with:",options:["Calcium channel blocker (dihydropyridine)", "ACE inhibitor + beta-blocker", "Thiazide diuretic alone", "Alpha-1 blocker"],answer:1},
+      {question:"The Cockcroft-Gault equation estimates:",options:["Glomerular filtration rate (eGFR) using serum cystatin C", "Creatinine clearance (CrCl) using serum creatinine, age, weight, and sex", "Total body water for drug distribution", "Loading dose based on volume of distribution"],answer:1},
+      {question:"Iron is absorbed most efficiently in which ionic form?",options:["Ferric (Fe3+) form", "Ferrous (Fe2+) form", "Complexed with transferrin", "As heme iron (absorbed separately via HCP1)"],answer:1},
+      {question:"Which antibiotic works by binding to the 23S rRNA of the 50S ribosomal subunit to inhibit peptide bond formation?",options:["Streptomycin", "Chloramphenicol", "Azithromycin", "Linezolid"],answer:3},
+      {question:"A 65-year-old patient with type 2 diabetes has new-onset albuminuria. Which drug class is most beneficial to slow CKD progression in this patient?",options:["DPP-4 inhibitors", "SGLT2 inhibitors or ACE inhibitors/ARBs", "Sulfonylureas", "Insulin glargine"],answer:1},
+      {question:"Photostability testing of pharmaceuticals follows which ICH guideline?",options:["ICH Q1A (Stability Testing)", "ICH Q1B (Photostability Testing)", "ICH Q2 (Analytical Validation)", "ICH Q6A (Specifications)"],answer:1},
+      {question:"Dopamine's effects are receptor-dose dependent. At low doses (1-3 mcg/kg/min), dopamine primarily acts on which receptors?",options:["Beta-1 adrenergic receptors", "Alpha-1 adrenergic receptors", "Dopamine D1 receptors in renal vasculature", "Dopamine D2 receptors in the CNS"],answer:2},
+      {question:"Which class of drugs causes hyperprolactinemia as a side effect due to dopamine receptor blockade?",options:["SSRIs", "Benzodiazepines", "Typical antipsychotics (D2 blockers)", "Beta-blockers"],answer:2},
+      {question:"Which immunoglobulin class is most abundant in serum and provides long-term immunity?",options:["IgA", "IgM", "IgG", "IgE"],answer:2},
+      {question:"Atenolol is a beta-1 selective blocker. Its renal excretion means dose adjustment is needed in:",options:["Hepatic failure", "Renal failure", "Both hepatic and renal failure", "Neither"],answer:1},
+      {question:"Which diuretic causes hypercalcemia as a side effect by increasing renal calcium reabsorption?",options:["Furosemide", "Hydrochlorothiazide (HCTZ)", "Spironolactone", "Acetazolamide"],answer:1},
+      {question:"A suspension must be easily redispersible. The excipient class that prevents caking and aids resuspension is:",options:["Antioxidants", "Buffering agents", "Suspending agents (e.g., xanthan gum, CMC)", "Preservatives"],answer:2},
+      {question:"Misoprostol is a synthetic prostaglandin E1 analog. It protects the gastric mucosa by:",options:["Inhibiting COX-2 selectively", "Stimulating mucus and bicarbonate secretion and reducing acid production", "Neutralizing gastric acid directly", "Binding and inactivating pepsin"],answer:1},
+      {question:"Which controlled substance schedule includes drugs with high abuse potential and no currently accepted medical use?",options:["Schedule II", "Schedule III", "Schedule I", "Schedule IV"],answer:2},
+      {question:"A patient is receiving 0.9% sodium chloride (normal saline) IV infusion. This is considered:",options:["Hypotonic solution", "Hypertonic solution", "Isotonic solution", "A colloidal solution"],answer:2},
+      {question:"Which drug is the antidote for heparin overdose?",options:["Vitamin K", "Protamine sulfate", "Fresh frozen plasma", "Recombinant factor VIIa"],answer:1},
+      {question:"Which anticancer mechanism involves inhibition of dihydrofolate reductase (DHFR), thereby blocking DNA synthesis?",options:["Paclitaxel (taxane mechanism)", "Methotrexate (antifolate mechanism)", "Cisplatin (platinum compound mechanism)", "Doxorubicin (topoisomerase II inhibitor mechanism)"],answer:1},
+      {question:"According to Stokes' law, the rate of sedimentation in a suspension is reduced by:",options:["Increasing particle size", "Decreasing viscosity of the medium", "Decreasing the density difference between particle and medium", "Increasing temperature"],answer:2},
+      {question:"The term 'pharmaceutical care' was defined by Hepler and Strand (1990) as:",options:["The dispensing of medications by a licensed pharmacist", "The responsible provision of drug therapy for the purpose of achieving definite outcomes that improve quality of life", "The optimization of drug costs in health systems", "The monitoring of adverse drug reactions"],answer:1},
+      {question:"Osmoregulation in ophthalmic solutions requires them to be isotonic to minimize irritation. Which agent is most commonly used to achieve isotonicity?",options:["Benzalkonium chloride", "Sodium chloride", "Boric acid", "Methylcellulose"],answer:1},
+      {question:"Which drug is used as a reversal agent for dabigatran (direct thrombin inhibitor)?",options:["Vitamin K", "Andexanet alfa", "Idarucizumab", "Protamine sulfate"],answer:2},
+      {question:"Carvedilol differs from selective beta-blockers in that it also blocks:",options:["Alpha-1 adrenergic receptors (causing vasodilation)", "Muscarinic receptors", "Dopamine D2 receptors", "Histamine H1 receptors"],answer:0},
+      {question:"Which type of pharmacokinetic drug interaction leads to increased plasma levels of the victim drug when two drugs share the same renal tubular secretion pathway?",options:["Induction of metabolism", "Inhibition of renal tubular secretion", "Enhanced protein binding displacement", "Altered gastric motility"],answer:1},
+      {question:"Cimetidine, an H2 receptor blocker, is a known inhibitor of multiple CYP enzymes. Which interaction should the pharmacist flag?",options:["Cimetidine + warfarin → decreased warfarin levels", "Cimetidine + warfarin → increased warfarin levels and bleeding risk", "Cimetidine + antacids → decreased antacid effect", "Cimetidine + ranitidine → additive gastric bleeding"],answer:1},
+      {question:"Which of the following is a competitive antagonist characteristic?",options:["Cannot be overcome by increasing agonist concentration", "Shifts the agonist dose-response curve to the right without depressing the maximum", "Causes irreversible receptor blockade", "Activates the receptor with lower efficacy than the agonist"],answer:1},
+      {question:"A patient on SSRI therapy reports sexual dysfunction and insomnia. These are characteristic side effects of SSRIs because:",options:["SSRIs block alpha-1 adrenergic receptors", "Excess serotonergic stimulation of 5-HT2A receptors causes these effects", "SSRIs inhibit dopamine reuptake", "SSRIs are potent muscarinic antagonists"],answer:1},
+      {question:"Drug-induced lupus erythematosus (DILE) is associated with which of the following drugs?",options:["Amlodipine", "Hydralazine and procainamide", "Metformin", "Losartan"],answer:1},
+      {question:"The volume of distribution (Vd) for a drug is 3.5 L/kg in a 70 kg patient. This volume (245 L) suggests:",options:["The drug is confined to plasma (plasma volume ≈ 3 L)", "The drug distributes into total body water", "The drug is extensively sequestered in peripheral tissues beyond total body water (42 L)", "The drug is primarily confined to extracellular fluid"],answer:2},
+      {question:"Lithium's narrow therapeutic index requires plasma level monitoring. Therapeutic plasma levels for bipolar disorder maintenance are:",options:["0.1–0.4 mEq/L", "0.6–1.2 mEq/L", "1.5–2.0 mEq/L", "2.5–3.5 mEq/L"],answer:1},
+      {question:"Which antihypertensive drug class is the preferred choice in diabetic patients with proteinuria to provide renoprotection?",options:["Calcium channel blockers", "Beta-blockers", "ACE inhibitors or ARBs", "Loop diuretics"],answer:2},
+      {question:"The primary route of elimination for most drugs is:",options:["Pulmonary excretion", "Hepatic metabolism followed by renal or biliary excretion", "Biliary excretion directly", "Sweat and saliva"],answer:1},
+      {question:"Which hemostatic agent reverses the anticoagulant effects of direct oral anti-Xa inhibitors (apixaban, rivaroxaban)?",options:["Idarucizumab", "Protamine sulfate", "Andexanet alfa", "Vitamin K"],answer:2},
+      {question:"What is the significance of the pKa of a drug in pharmaceutical formulation?",options:["It determines the drug's molecular weight", "It determines the degree of ionization at various pH values, affecting solubility and absorption", "It predicts the drug's protein binding capacity", "It indicates the drug's metabolic pathway"],answer:1},
+      {question:"Pharmacogenomics studies the relationship between:",options:["Drug prices and genetic diversity of populations", "Genetic variation and drug response (efficacy and toxicity)", "Gene therapy and drug delivery systems", "Genetic diseases and their pharmacological treatments"],answer:1},
+      {question:"Which beta-lactamase inhibitor is combined with amoxicillin to extend its spectrum?",options:["Sulbactam", "Clavulanic acid", "Tazobactam", "Avibactam"],answer:1},
+      {question:"Oseltamivir (Tamiflu) is most effective for influenza when started within:",options:["24 hours of symptom onset", "48 hours of symptom onset", "72 hours of symptom onset", "One week of symptom onset"],answer:1},
+      {question:"Which drug inhibits the enzyme acetylcholinesterase, thereby increasing acetylcholine levels in the brain for Alzheimer's treatment?",options:["Memantine", "Donepezil", "Galantamine — both B and C are correct", "Rivastigmine — A, B, and C are all cholinesterase inhibitors; B/C/D are correct"],answer:2},
+      {question:"The purpose of adding antioxidants to pharmaceutical formulations is to prevent:",options:["Microbial growth", "Oxidative degradation of the active ingredient", "Hydrolysis of ester bonds in the drug", "Phase separation in emulsions"],answer:1},
+      {question:"According to USP, an injectable solution must be sterilized. Which method is the gold standard for terminally sterilizing aqueous injections in their final container?",options:["Filtration through 0.22 μm membrane", "Dry heat sterilization at 160°C", "Moist heat sterilization (autoclaving at 121°C for 15 minutes)", "Gamma irradiation"],answer:2},
+      {question:"A patient on warfarin eats large amounts of green leafy vegetables (high in Vitamin K). The expected therapeutic effect is:",options:["Increased INR and bleeding risk", "Decreased INR and reduced anticoagulation", "No change in INR", "Increased warfarin toxicity"],answer:1},
+      {question:"Neonates have a higher volume of distribution for water-soluble drugs because they have:",options:["Higher plasma protein binding", "A higher percentage of body water compared to adults", "Lower GFR", "More developed hepatic enzymes"],answer:1},
+      {question:"Which type of tablet test measures the ability of the tablet to withstand mechanical stress without breaking?",options:["Dissolution test", "Disintegration test", "Hardness/friability test", "Weight variation test"],answer:2},
+      {question:"The mechanism of action of ivermectin as an antiparasitic agent is:",options:["Inhibiting parasite DNA synthesis", "Hyperpolarizing parasite nerve and muscle cells by enhancing glutamate-gated chloride channel conductance", "Inhibiting tubulin polymerization in parasites", "Blocking squalene epoxidase in parasitic membranes"],answer:1},
+      {question:"Azithromycin (a macrolide) is unusual among antibiotics because it has:",options:["The shortest half-life of antibiotics", "An exceptionally long half-life (68 hours) allowing once-daily or even single-dose therapy", "More serious drug interactions than other macrolides", "Activity only against gram-negative organisms"],answer:1},
+      {question:"Which factor most significantly affects the rate of drug diffusion across the blood-brain barrier (BBB)?",options:["Molecular weight under 500 Da and high lipid solubility", "High protein binding", "Water solubility", "Negative charge at physiological pH"],answer:0},
+      {question:"The term 'chelation' in pharmacy most commonly refers to a drug-mineral interaction where:",options:["The mineral increases drug absorption", "A polyvalent cation (e.g., Ca2+, Mg2+, Fe3+) forms a complex with the drug, reducing its absorption", "The drug is oxidized by the mineral", "The mineral dissolves the drug tablet coating"],answer:1},
+      {question:"Which of the following is an appropriate counseling point for a patient starting alendronate for osteoporosis?",options:["Take with food to prevent esophageal irritation", "Take with 8 oz of water on empty stomach and remain upright for 30 minutes", "Take at bedtime to maximize bone absorption", "Take with dairy products for better calcium synergy"],answer:1},
+      {question:"A patient's medication profile includes phenytoin, valproic acid, and phenobarbital. This combination for epilepsy represents what type of drug therapy?",options:["Monotherapy", "Polypharmacy for seizure control (appropriate combination therapy)", "Therapeutic duplication", "Drug-drug synergy without clinical benefit"],answer:1},
+      {question:"Pharmacovigilance is defined as:",options:["The clinical testing of new drug candidates in Phase II trials", "The science and activities relating to the detection, assessment, understanding and prevention of adverse effects of medicines", "The post-market surveillance of generic drug bioequivalence", "The regulatory approval process for new molecular entities"],answer:1},
+      {question:"Which test evaluates the in vitro release of drug from solid oral dosage forms under standardized conditions?",options:["Disintegration test", "Dissolution test (USP Apparatus I/II)", "Hardness test", "Content uniformity test"],answer:1},
+      {question:"A drug has first-order elimination kinetics. If the initial plasma concentration is 100 mg/L and the half-life is 4 hours, what will the concentration be after 12 hours?",options:["50 mg/L", "25 mg/L", "12.5 mg/L", "6.25 mg/L"],answer:2},
+      {question:"According to the WHO definition, an adverse drug reaction (ADR) is a response that is:",options:["Expected and intentional", "Noxious, unintended, and occurring at doses normally used in humans", "Related only to overdose situations", "Caused by drug-drug interactions exclusively"],answer:1},
+      {question:"The most common cause of therapeutic failure in antibiotic treatment of bacterial infections is:",options:["Drug toxicity preventing adequate dosing", "Inadequate drug concentration at the site of infection or bacterial resistance", "Poor patient compliance with the regimen", "Allergic reactions to the antibiotic"],answer:1},
+      {question:"Which of the following is an absolute contraindication for the use of metformin?",options:["Mild renal impairment (eGFR 45–59 mL/min/1.73m²)", "Congestive heart failure (NYHA Class II)", "Severe renal impairment (eGFR < 30 mL/min/1.73m²)", "Age over 70 years"],answer:2}
+];
+
+/* ================================================================
+   FPGEE QUESTION BANK — TEST SERIES 2 (200 Questions)
+   Clinical Pharmacokinetics | Drug Law | Biostatistics | Pharmacotherapeutics
+================================================================ */
+const QUESTIONS_T2 = [
+      {question:"Under the Durham-Humphrey Amendment, which statement regarding prescription drugs is CORRECT?",options:["Prescription drugs can be dispensed without a prescription if the pharmacist deems it safe", "Prescription drugs must bear the legend 'Rx Only' and can only be dispensed with a valid prescription", "All Schedule V controlled substances require a written prescription", "Prescription-only status is determined solely by the pharmacist"],answer:1},
+      {question:"A patient with Type 2 diabetes has an eGFR of 28 mL/min/1.73m². Which antidiabetic medication is CONTRAINDICATED?",options:["Insulin glargine", "Sitagliptin (dose adjustment only)", "Metformin", "Pioglitazone"],answer:2},
+      {question:"A volume of distribution (Vd) of 700 L in a 70 kg patient suggests that the drug:",options:["Is primarily confined to plasma", "Is extensively distributed into peripheral tissues", "Has low plasma protein binding", "Is rapidly eliminated by the kidneys"],answer:1},
+      {question:"Which ophthalmic beta-blocker used for glaucoma is cardioselective (beta-1 selective)?",options:["Timolol", "Carteolol", "Betaxolol", "Levobunolol"],answer:2},
+      {question:"According to USP <797>, what is the maximum BUD for a low-risk compounded sterile preparation stored at room temperature (20–25°C)?",options:["24 hours", "14 days", "48 hours", "30 days"],answer:2},
+      {question:"Which law requires pharmacies to maintain records of all Schedule II controlled substance transactions for a minimum of 2 years?",options:["The Federal Food, Drug, and Cosmetic Act", "The Controlled Substances Act (CSA)", "The Omnibus Budget Reconciliation Act (OBRA '90)", "The Poison Prevention Packaging Act"],answer:1},
+      {question:"A patient presents with a severe anaphylactic reaction. The first-line treatment is:",options:["IV diphenhydramine (50 mg)", "Epinephrine 1:1000 (0.3 mg IM)", "Hydrocortisone IV 100 mg", "Albuterol nebulization"],answer:1},
+      {question:"According to OBRA '90, pharmacists are required to perform medication therapy reviews (MTM) to offer patient counseling in which setting?",options:["Hospital settings only", "Community pharmacy settings for Medicaid patients", "Mail-order pharmacies only", "Specialty pharmacy only"],answer:1},
+      {question:"A biostatistical study reports a relative risk (RR) of 0.75 for cardiovascular events in patients taking a new drug compared to placebo. This means:",options:["The drug increases cardiovascular risk by 75%", "The drug reduces cardiovascular risk by 25%", "The drug has no effect on cardiovascular risk", "The drug reduces cardiovascular risk by 75%"],answer:1},
+      {question:"The number needed to treat (NNT) is calculated as:",options:["1 / relative risk", "1 / absolute risk reduction (ARR)", "1 / relative risk reduction", "Absolute risk reduction × number of patients"],answer:1},
+      {question:"A randomized controlled trial (RCT) is the gold standard for establishing drug efficacy because it:",options:["Is inexpensive and quick to conduct", "Minimizes selection bias through random allocation of subjects to treatment groups", "Uses the largest possible study population", "Measures outcomes in real-world conditions"],answer:1},
+      {question:"According to clinical pharmacokinetics, which patient parameter most accurately predicts the initial dose of aminoglycosides?",options:["Total body weight (TBW) for all patients", "Ideal body weight (IBW) for non-obese patients, adjusted body weight for obese patients", "Actual body weight always", "Body surface area (BSA)"],answer:1},
+      {question:"The Beers Criteria is a tool used in geriatric pharmacy practice to identify:",options:["Drugs requiring dose adjustment in renal failure", "Potentially inappropriate medications (PIMs) in elderly patients (≥65 years)", "High-alert medications in hospital settings", "Drug-drug interactions in polypharmacy patients"],answer:1},
+      {question:"Which antiepileptic drug requires monitoring of serum sodium levels due to its SIADH-like effect (hyponatremia)?",options:["Valproic acid", "Carbamazepine and oxcarbazepine", "Phenytoin", "Levetiracetam"],answer:1},
+      {question:"The Food, Drug, and Cosmetic Act (FD&C Act) requires that new drugs must demonstrate which two things before FDA approval?",options:["Safety and cost-effectiveness", "Safety and efficacy under their proposed conditions of use", "Superiority to existing treatments", "Bioequivalence with reference listed drugs"],answer:1},
+      {question:"A p-value of 0.03 in a clinical trial means:",options:["There is a 3% chance the drug is effective", "There is a 3% probability the observed difference (or more extreme) would occur if the null hypothesis were true", "The study has a 97% power", "The treatment effect is clinically significant"],answer:1},
+      {question:"According to DEA regulations, a Schedule II prescription:",options:["May be telephoned in to the pharmacy in all circumstances", "May be partially filled if the full quantity is not available, with remainder dispensed within 72 hours", "May be refilled up to 5 times in 6 months", "Requires no DEA number on the prescription"],answer:1},
+      {question:"The Medication Guide (MedGuide) is a patient handout required by FDA for which medications?",options:["All prescription medications", "Medications with serious or significant public health concerns that require patient information for safe use", "All OTC medications", "Controlled substances only"],answer:1},
+      {question:"A 95% confidence interval (CI) for a drug's effect that does NOT cross 1.0 (for RR or OR) or 0 (for mean difference) indicates:",options:["The study has too small a sample size", "A statistically significant result at p < 0.05", "Clinical significance has been established", "The null hypothesis is accepted"],answer:1},
+      {question:"Which clinical pharmacokinetic service is most critical for achieving therapeutic outcomes with IV vancomycin using AUC-guided monitoring?",options:["Measuring trough levels alone", "Obtaining a peak and trough to calculate AUC/MIC using Bayesian software", "Using only weight-based dosing without monitoring", "Monitoring via QTc prolongation assessment"],answer:1},
+      {question:"Oseltamivir requires dose reduction in patients with renal impairment. For a CrCl of 10–30 mL/min, the appropriate dose is:",options:["150 mg twice daily (standard)", "75 mg once daily (reduced)", "30 mg twice daily", "75 mg twice daily with extra hydration"],answer:1},
+      {question:"OBRA '90 mandated that pharmacists perform prospective drug utilization review (ProDUR). This includes screening for:",options:["Generic substitution opportunities", "Drug-drug interactions, contraindications, and therapeutic duplication before dispensing", "Insurance coverage verification", "Drug pricing comparisons"],answer:1},
+      {question:"Which parameter is used to describe the variability in a bioequivalence study that must fall within 80–125% for approval?",options:["Tmax", "90% confidence interval for AUC and Cmax ratios (test/reference)", "Mean half-life difference", "Peak plasma concentration alone"],answer:1},
+      {question:"A pharmacy receives an oral prescription for oxycodone 10 mg. The pharmacist should:",options:["Fill without verification as it is a common medication", "Require a written prescription as oxycodone is Schedule II (oral/fax not routinely accepted except in emergencies)", "Accept a fax as the permanent record", "Dispense 72-hour emergency supply and obtain written Rx later"],answer:1},
+      {question:"The NDA (New Drug Application) requires which type of clinical studies to demonstrate clinical safety and efficacy?",options:["Phase I trials only", "Phases I, II, and III clinical trials with full data package", "Phase IV post-marketing surveillance", "Pharmacokinetic studies only (no clinical trials needed for small molecules)"],answer:1},
+      {question:"Which antibiotic is first-line for MRSA (methicillin-resistant Staphylococcus aureus) serious infections?",options:["Cefazolin", "Ampicillin", "Vancomycin", "Clindamycin"],answer:2},
+      {question:"Stevens-Johnson Syndrome (SJS), a severe hypersensitivity reaction, is most commonly associated with:",options:["ACE inhibitors", "Penicillins", "Sulfonamides, anticonvulsants (carbamazepine, lamotrigine), and allopurinol", "Fluoroquinolones"],answer:2},
+      {question:"According to federal law, which category of drugs may be dispensed without a prescription but requires a pharmacist's involvement (behind-the-counter)?",options:["Schedule II controlled substances", "OTC Schedule V controlled substances (e.g., cough preparations with codeine in states allowing it)", "Narrow therapeutic index drugs", "High-alert medications"],answer:1},
+      {question:"A cohort study in pharmacoepidemiology that follows patients exposed to a drug versus non-exposed over time to observe outcomes is classified as:",options:["A case-control study", "A prospective cohort study", "A cross-sectional study", "A case series"],answer:1},
+      {question:"Which adverse effect is most commonly associated with quinolone antibiotics and warrants patient counseling?",options:["Nephrotoxicity", "Photosensitivity, tendinopathy/tendon rupture (especially Achilles), and QT prolongation", "Ototoxicity", "Hypoglycemia"],answer:1},
+      {question:"The Institute for Safe Medication Practices (ISMP) High-Alert Medications list includes drugs that:",options:["Are frequently prescribed and require no special precautions", "Bear a heightened risk of causing significant patient harm when used in error", "Are most expensive in the formulary", "Require prior authorization from insurance"],answer:1},
+      {question:"When counseling a patient on correct use of a metered-dose inhaler (MDI) without a spacer, the pharmacist should advise:",options:["Inhale rapidly and forcefully through the mouthpiece", "Breathe out, place mouthpiece in mouth, press canister, and inhale slowly and deeply", "Place the inhaler 4 inches from the open mouth (open-mouth technique) for all patients", "Exhale immediately after inhalation to distribute medication"],answer:1},
+      {question:"A patient is discharged with a new prescription for warfarin. ISMP recommends this is a high-alert medication. Effective counseling includes:",options:["INR monitoring schedule, sign of bleeding, consistent vitamin K intake, and drug/food interactions", "Taking a double dose if a dose is missed", "Stopping the medication if any bruising appears", "Only avoiding alcohol, with no other restrictions"],answer:0},
+      {question:"The Controlled Substances Act (CSA) classifies controlled substances into 5 schedules based on:",options:["Cost and profitability", "Abuse potential, accepted medical use, and safety/dependence liability", "Mechanism of action", "Route of administration only"],answer:1},
+      {question:"A patient with severe renal impairment has a drug's half-life extended from 6 hours to 24 hours due to reduced renal clearance. To maintain the same average steady-state concentration, the dosing regimen should be:",options:["Keep dose same, increase interval 4-fold (from e.g., Q6H to Q24H)", "Keep interval same, increase dose 4-fold", "Double dose, double interval", "Keep both dose and interval unchanged"],answer:0},
+      {question:"Risk Evaluation and Mitigation Strategy (REMS) programs are required by the FDA when:",options:["A drug is first approved for any indication", "The benefits of a drug may outweigh its risks only if specific measures are in place to manage serious risks", "A generic drug application is submitted", "A drug is manufactured outside the US"],answer:1},
+      {question:"Which standard deviation concept describes the variability of the sample mean (not individual data points) and is used to calculate confidence intervals?",options:["Variance", "Standard error of the mean (SEM)", "Coefficient of variation (CV)", "Interquartile range (IQR)", "Standard deviation"],answer:1},
+      {question:"Under federal law, a pharmacist may substitute a generic drug for a brand-name drug ONLY when:",options:["The physician writes the brand name in cursive", "The generic substitution is not prohibited by the prescriber AND the state permits substitution", "The patient specifically requests a generic", "The brand drug is out of stock"],answer:1},
+      {question:"A patient on lithium develops polyuria and polydipsia. This is most likely due to:",options:["Lithium-induced hypothyroidism", "Nephrogenic diabetes insipidus (lithium impairs ADH action on the collecting duct)", "Lithium-induced hypercalcemia", "Lithium's direct diuretic effect"],answer:1},
+      {question:"The Kefauver-Harris Amendment (1962) to the FD&C Act required pharmaceutical manufacturers to prove:",options:["Only safety of new drugs", "Both safety AND efficacy of new drugs before FDA approval", "Post-market safety surveillance", "Bioequivalence of generic drugs"],answer:1},
+      {question:"Which clinical parameter is used to assess therapeutic drug monitoring of phenytoin, and is critical when serum albumin is low?",options:["Total phenytoin level only (normal range 10-20 mcg/mL)", "Free (unbound) phenytoin level or corrected total phenytoin level", "Peak phenytoin level 2 hours after dosing", "Trough phenytoin level only"],answer:1},
+      {question:"The Poison Prevention Packaging Act (PPPA) requires child-resistant containers for most prescription and OTC medications EXCEPT:",options:["Controlled substances", "Medications dispensed to elderly patients upon request or with prescriber authorization", "Topical medications", "Oral liquid preparations"],answer:1},
+      {question:"Which of the following is considered a high-risk medication error scenario according to ISMP?",options:["Dispensing ibuprofen 200 mg OTC", "Crushing an extended-release tablet for a patient with a nasogastric tube (NG tube)", "Dispensing a 30-day supply of metformin", "Counseling on a new OTC antacid"],answer:1},
+      {question:"The statistical test most appropriate for comparing two means from independent groups with normally distributed data is:",options:["Chi-square test", "Mann-Whitney U test", "Independent samples t-test", "Fisher's exact test"],answer:2},
+      {question:"According to USP Chapter <1> on Injections, what is the acceptable pH range for most parenteral solutions to minimize pain and tissue irritation?",options:["3.0–4.0", "4.5–8.5", "9.0–11.0", "1.0–2.5"],answer:1},
+      {question:"A drug recall is classified as Class I when:",options:["The product has only cosmetic defects", "The product's use is likely to cause serious adverse health consequences or death", "The product is unlikely to cause adverse health consequences but violates FDA regulations", "The product is recalled for mislabeling only"],answer:1},
+      {question:"Medication reconciliation is defined as the process of:",options:["Calculating the correct dosage for a patient's weight", "Comparing a patient's medication orders to all medications the patient has been taking to avoid discrepancies", "Counseling patients on their new prescriptions only", "Recording all ADRs in the patient chart"],answer:1},
+      {question:"Which drug-disease interaction represents a contraindication for using a non-selective beta-blocker?",options:["Hypertension in a diabetic patient", "Reactive airway disease (asthma/COPD) with non-selective beta-blockers (risk of bronchospasm)", "Heart failure with reduced ejection fraction (HFrEF)", "Atrial fibrillation requiring rate control"],answer:1},
+      {question:"A patient taking clarithromycin (a strong CYP3A4 inhibitor) is prescribed atorvastatin. The recommended action is:",options:["Continue both at standard doses; no interaction", "Temporarily suspend atorvastatin during clarithromycin course to prevent myopathy risk", "Switch clarithromycin to erythromycin", "Halve the atorvastatin dose"],answer:1},
+      {question:"The primary role of the Pharmacy and Therapeutics (P&T) Committee in a hospital is to:",options:["Audit pharmacy billing practices", "Develop and maintain the formulary, establish medication use policies, and evaluate drug safety", "Credential pharmacy staff", "Negotiate drug prices with manufacturers"],answer:1},
+      {question:"According to the Naranjo Algorithm, an ADR is classified as 'probable' when the total score is:",options:["≥9", "5–8", "1–4", "<0"],answer:1},
+      {question:"A patient's CURB-65 score for community-acquired pneumonia is 3. This indicates:",options:["Low mortality risk; outpatient treatment is appropriate", "Moderate-high mortality risk; inpatient treatment is recommended", "Intensive care admission is required", "Antifungal therapy should be considered"],answer:1},
+      {question:"Which adverse effect is specifically associated with ACE inhibitors (but not ARBs) and may necessitate switching medication?",options:["Hyperkalemia", "Angioedema and non-productive dry cough (due to bradykinin accumulation)", "Orthostatic hypotension", "First-dose hypotension"],answer:1},
+      {question:"Which test is used to evaluate the bioequivalence of a generic drug product with the reference listed drug (RLD)?",options:["Phase III randomized controlled trial", "Average bioequivalence study with pharmacokinetic endpoints (AUC, Cmax, Tmax)", "Phase I dose-escalation study", "Long-term safety registry"],answer:1},
+      {question:"A patient is taking amiodarone and warfarin. Amiodarone inhibits CYP2C9. The pharmacist should anticipate:",options:["Decreased warfarin effect requiring dose increase", "Increased warfarin plasma levels with risk of bleeding; INR should be monitored closely and warfarin dose likely reduced", "No interaction between amiodarone and warfarin", "Increased amiodarone toxicity"],answer:1},
+      {question:"Which type of study design best establishes causation in clinical pharmacology?",options:["Cross-sectional survey", "Case-control study", "Randomized, double-blind, placebo-controlled trial", "Meta-analysis of observational studies"],answer:2},
+      {question:"Under the FDCA, a pharmacist who compounds sterile preparations for office use without a patient-specific prescription must comply with:",options:["USP <797> only", "Section 503B of the FDCA as an outsourcing facility under FDA oversight", "State board regulations only, no federal requirements", "No special requirements since it is compounded in-house"],answer:1},
+      {question:"Which scoring system is used to assess bleeding risk in patients on anticoagulation therapy for atrial fibrillation?",options:["CHADS2-VASc score", "CHA2DS2-VASc for stroke risk; HAS-BLED for bleeding risk", "Framingham Risk Score", "CURB-65 Score"],answer:1},
+      {question:"A patient on valproic acid has a total drug level of 90 mcg/mL but shows signs of toxicity. What is the most likely explanation?",options:["The drug is below therapeutic range (50-125 mcg/mL)", "Hypoalbuminemia is increasing the free fraction of valproic acid, causing toxicity despite a 'normal' total level", "Valproic acid has non-linear kinetics, making total levels unreliable", "The patient has renal failure, increasing total levels"],answer:1},
+      {question:"Therapeutic substitution (substituting one drug for a therapeutically equivalent but chemically different drug) requires:",options:["Only pharmacist judgment and no further authorization", "Prescriber authorization or pre-established institutional protocols", "Patient consent only, with no prescriber notification", "Generic substitution laws permitting it"],answer:1},
+      {question:"Which federal legislation mandated that pharmacy benefit managers (PBMs) and Medicare Part D plans ensure beneficiaries have access to medication therapy management (MTM) programs?",options:["HIPAA (1996)", "The Medicare Modernization Act (MMA) of 2003", "OBRA '90", "The Patient Protection and Affordable Care Act (ACA) of 2010"],answer:1},
+      {question:"A pharmacy technician inadvertently prepares 0.9% NaCl (normal saline) instead of 0.45% NaCl for a pediatric IV order. This is classified as what type of medication error?",options:["Near-miss (caught before reaching patient)", "Wrong drug error", "Wrong concentration/wrong dose error", "Wrong route error"],answer:2},
+      {question:"In pharmacoepidemiology, the attributable risk (AR) represents:",options:["The ratio of risk in exposed vs. unexposed groups", "The difference in risk between exposed and unexposed groups (risk in exposed – risk in unexposed)", "The proportion of cases in the exposed group attributable to the exposure", "Total risk in the general population"],answer:1},
+      {question:"Which pharmacy law requires that pharmacists maintain patient medication profiles and offer counseling to Medicaid patients?",options:["The Controlled Substances Act", "OBRA '90", "The Prescription Drug Marketing Act", "The Drug Quality and Security Act"],answer:1},
+      {question:"A patient is on multiple medications. The pharmacist identifies an interaction where drug A decreases the absorption of drug B when taken together. The best recommendation is:",options:["Discontinue drug B", "Separate the administration of drug A and drug B by at least 2 hours", "Switch drug B to a parenteral formulation", "Double the dose of drug B to compensate"],answer:1},
+      {question:"Which of the following medications requires an MedGuide be dispensed to patients?",options:["Amoxicillin 500 mg capsules", "Ibuprofen 200 mg OTC", "Warfarin (Coumadin)", "Metformin 500 mg"],answer:2},
+      {question:"The term 'drug utilization review (DUR)' in pharmacy practice encompasses:",options:["Review of drug manufacturing processes", "Review of prescribing, dispensing, and use patterns to ensure appropriate, safe, and effective drug use", "Review of drug pricing and reimbursement", "Review of drug import and export regulations"],answer:1},
+      {question:"In clinical practice, which laboratory value is most critical to monitor in patients receiving IV amphotericin B?",options:["Liver function tests (ALT, AST)", "Serum creatinine and electrolytes (K+, Mg2+) due to nephrotoxicity and electrolyte wasting", "Complete blood count (CBC) only", "Serum amphotericin B levels"],answer:1},
+      {question:"The STOPP/START criteria, like Beers Criteria, are tools used in geriatric patients. STOPP criteria identify medications to STOP, while START criteria identify medications:",options:["That should be started to prevent clinical conditions that could lead to further harm in elderly patients", "That should be stopped due to inappropriate use in the elderly", "That are cheaper alternatives in elderly patients", "That require dose adjustment in the elderly"],answer:0},
+      {question:"Which schedule of controlled substance allows pharmacists to dispense without a prescription in many states (OTC)?",options:["Schedule II", "Schedule III", "Schedule IV", "Schedule V"],answer:3},
+      {question:"A meta-analysis combines results of multiple studies. Its primary advantage over a single RCT is:",options:["Elimination of confounding factors", "Increased statistical power and precision of estimates by pooling data", "Avoidance of publication bias", "Elimination of heterogeneity between studies"],answer:1},
+      {question:"According to the Joint Commission's National Patient Safety Goals, which practice is required to ensure correct patient identification before medication administration?",options:["Checking only the patient's name", "Using at least two patient identifiers (e.g., name and date of birth or medical record number)", "Checking only the room number", "Relying solely on staff recognition of the patient"],answer:1},
+      {question:"Which legislation created the Drug Enforcement Administration (DEA) and the current system of controlled substance scheduling?",options:["Food, Drug, and Cosmetic Act (1938)", "Harrison Narcotics Tax Act (1914)", "Comprehensive Drug Abuse Prevention and Control Act (Controlled Substances Act, 1970)", "Prescription Drug Marketing Act (1987)"],answer:2},
+      {question:"A patient on azithromycin for community-acquired pneumonia asks about continuing methadone for opioid use disorder. The main concern with this combination is:",options:["Reduced azithromycin efficacy due to methadone interaction", "QT interval prolongation from both drugs increasing torsades de pointes risk", "Reduced methadone levels due to CYP3A4 induction by azithromycin", "Additive CNS depression causing overdose"],answer:1},
+      {question:"A physician writes a prescription for 'hydromorphone 4 mg tablets, dispense 30 tablets, no refills.' An auxiliary label that should be affixed is:",options:["Shake well before use", "May cause drowsiness – use caution when driving or operating machinery", "Take on an empty stomach", "Avoid dairy products"],answer:1},
+      {question:"Which agency is responsible for regulating the manufacturing, quality, and safety of pharmaceutical products in the United States?",options:["Drug Enforcement Administration (DEA)", "Centers for Disease Control (CDC)", "Food and Drug Administration (FDA)", "Centers for Medicare and Medicaid Services (CMS)"],answer:2},
+      {question:"A retrospective case-control study in pharmacoepidemiology is best suited to study:",options:["Common adverse drug reactions in large populations", "Rare adverse drug reactions by comparing cases (with the outcome) to controls (without the outcome)", "Drug efficacy in prospective cohorts", "Drug-drug interactions in real-time clinical settings"],answer:1},
+      {question:"The Drug Quality and Security Act (DQSA) of 2013 created the track-and-trace requirements for pharmaceutical supply chain security under its:",options:["503B outsourcing facility provisions", "Drug Supply Chain Security Act (DSCSA) provisions", "REMS program requirements", "Orange Book listing requirements"],answer:1},
+      {question:"When evaluating a clinical study, which type of bias occurs when patients who are lost to follow-up differ systematically from those who complete the study?",options:["Selection bias", "Attrition bias (withdrawal bias)", "Information bias", "Confounding bias"],answer:1},
+      {question:"Which antihypertensive class is preferred in African American patients without diabetes or CKD per JNC guidelines?",options:["ACE inhibitors", "ARBs", "Thiazide diuretics or calcium channel blockers", "Beta-blockers"],answer:2},
+      {question:"Pharmacoeconomic analysis that compares the costs and consequences of two or more pharmaceutical alternatives, measuring outcomes in natural units, is called:",options:["Cost-benefit analysis (CBA)", "Cost-effectiveness analysis (CEA)", "Cost-utility analysis (CUA)", "Cost-minimization analysis (CMA)"],answer:1},
+      {question:"Which of the following information is NOT required by federal law on a prescription drug label dispensed to a patient?",options:["Patient name", "Directions for use", "Drug manufacturer's name and address", "Drug name and strength"],answer:2},
+      {question:"A hospital pharmacist receives an order for IV potassium chloride 80 mEq to be given over 1 hour. The appropriate action is:",options:["Prepare and dispense as ordered", "Refuse to dispense as this rate exceeds safe limits (max 10-20 mEq/hr peripherally) and contact the prescriber", "Dilute in 1 L NS and administer over 1 hour", "Prepare in a concentrated 100 mL bag as ordered"],answer:1},
+      {question:"A patient's total cholesterol is 280 mg/dL, LDL is 190 mg/dL, and they have no other cardiovascular risk factors. According to ACC/AHA guidelines, what is the most appropriate intervention?",options:["Lifestyle modification alone is sufficient with no drug therapy", "High-intensity statin therapy is indicated for LDL ≥ 190 mg/dL regardless of other risk factors", "Low-intensity statin therapy plus diet", "Ezetimibe monotherapy"],answer:1},
+      {question:"In hospital pharmacy, the purpose of a formulary is to:",options:["Increase drug expenditures to improve patient outcomes", "Guide prescribers to use drugs that are safe, effective, and cost-effective within an institution's scope of care", "Restrict prescribing to only off-patent drugs", "Eliminate the need for P&T committee oversight"],answer:1},
+      {question:"The Clinical Pharmacogenomics Implementation Consortium (CPIC) provides guidelines for genotype-guided drug therapy. Which gene-drug pair is the most clinically established?",options:["TPMT — thiopurine dosing (azathioprine, 6-mercaptopurine)", "CYP2D6 — metformin dosing", "SLCO1B1 — ACE inhibitor dosing", "DPYD — beta-blocker dosing"],answer:0},
+      {question:"Which of the following drugs requires a negative pregnancy test before dispensing and participation in a Risk Evaluation and Mitigation Strategy (REMS) program?",options:["Methotrexate — but only requires standard counseling", "Isotretinoin (iPLEDGE program) — requires monthly pregnancy tests and two forms of contraception", "Warfarin — no REMS program required", "Thalidomide — requires THALOMID REMS (S.T.E.P.S) program (both A and D are correct but D is more specific)"],answer:1},
+      {question:"When a pharmacist identifies a clinically significant drug-drug interaction and contacts the prescriber who refuses to change the order, the pharmacist's next step is to:",options:["Dispense the medication and document the interaction in the patient's record, noting the prescriber was informed", "Refuse to dispense and contact the state board of pharmacy immediately", "Dispense without documentation", "Change the prescription without prescriber authorization"],answer:0},
+      {question:"Which statement about off-label drug use is correct?",options:["It is illegal for prescribers to prescribe drugs for off-label uses", "FDA approval indicates the drug cannot be used for other indications", "Off-label use is legal; prescribers may prescribe approved drugs for unapproved indications based on clinical evidence", "Pharmacists must refuse to dispense all off-label prescriptions"],answer:2},
+      {question:"In pharmacoeconomics, a QALY (quality-adjusted life year) measures:",options:["The total number of medications a patient takes annually", "One year of life adjusted for the quality of health during that year; used in cost-utility analysis", "The annual cost of drug therapy per patient", "The incremental cost of a drug per adverse event prevented"],answer:1},
+      {question:"Which drug used for opioid use disorder is a partial mu-opioid agonist combined with naloxone in sublingual formulation to deter injection abuse?",options:["Methadone (Dolophine)", "Naltrexone (Vivitrol)", "Buprenorphine/naloxone (Suboxone)", "Loperamide"],answer:2},
+      {question:"A patient asks about potential interaction between St. John's Wort (an herbal supplement) and their antidepressant (sertraline). The main concern is:",options:["St. John's Wort has no interactions with prescription antidepressants", "Risk of serotonin syndrome due to St. John's Wort's serotonergic activity combined with sertraline", "St. John's Wort inhibits CYP2D6, increasing sertraline levels dangerously", "St. John's Wort decreases sertraline absorption"],answer:1},
+      {question:"Prescription drug monitoring programs (PDMPs) are state-run electronic databases that track:",options:["All prescription drugs dispensed in the state", "Specifically controlled substance dispensing to identify patterns of misuse or diversion", "Only Schedule II controlled substances", "Drug adverse event reports submitted by pharmacies"],answer:1},
+      {question:"According to the Pharmacist's Code of Ethics, a pharmacist's primary obligation is to:",options:["Maximize pharmacy revenue", "Serve the health needs of individual patients and society", "Comply with all prescriber orders without question", "Minimize drug expenditures at all costs"],answer:1},
+      {question:"Echinacea, an herbal supplement commonly taken for immune support, may interact with which class of immunosuppressants?",options:["Corticosteroids — Echinacea reduces corticosteroid efficacy", "Calcineurin inhibitors (cyclosporine, tacrolimus) — Echinacea may reduce their immunosuppressive effect", "Monoclonal antibodies — no significant interaction", "Methotrexate — Echinacea increases hepatotoxicity"],answer:0},
+      {question:"Which of the following is an example of a Type B (bizarre/idiosyncratic) adverse drug reaction?",options:["QT prolongation from sotalol at high doses", "Drowsiness from antihistamines", "Penicillin-induced anaphylaxis (unpredictable, unrelated to pharmacological action)", "Dose-dependent nephrotoxicity from aminoglycosides"],answer:2},
+      {question:"Under Medicare Part D, the coverage gap ('donut hole') refers to:",options:["A period where patients pay full cost of drugs after the initial coverage limit is reached and before catastrophic coverage begins", "A gap in coverage for drugs not on the formulary", "A period of reduced premium payments for Medicare beneficiaries", "A gap in coverage for brand-name drugs that have generics available"],answer:0},
+      {question:"The principle of 'therapeutic drug monitoring' (TDM) is most important for drugs with:",options:["Wide therapeutic index and predictable pharmacokinetics", "Narrow therapeutic index and high inter-individual pharmacokinetic variability", "Good oral bioavailability and consistent absorption", "Short half-lives and once-weekly dosing"],answer:1},
+      {question:"Which USP chapter governs the compounding of non-sterile preparations?",options:["USP <797>", "USP <795>", "USP <800>", "USP <823>"],answer:1},
+      {question:"The process by which a drug causes its own metabolism to increase upon repeated administration is called:",options:["Pharmacokinetic tolerance", "Enzyme autoinduction (e.g., carbamazepine, rifampin)", "Receptor downregulation", "Tachyphylaxis"],answer:1},
+      {question:"A patient fills a prescription for drug A at pharmacy X and drug B at pharmacy Y. The pharmacist at pharmacy Y should screen for interactions because:",options:["Pharmacies are required to maintain medication profiles and perform prospective DUR", "Drug B is likely a controlled substance requiring special monitoring", "Federal law mandates patients use only one pharmacy", "Drug A is a high-alert medication"],answer:0},
+      {question:"The indication 'prn' on a prescription means:",options:["Take once at bedtime", "Take as directed", "Take as needed", "Take before meals"],answer:2},
+      {question:"Which federal law established the 'Orphan Drug Act,' providing incentives for development of drugs for rare diseases affecting fewer than 200,000 Americans?",options:["FD&C Act (1938)", "Orphan Drug Act (1983)", "Hatch-Waxman Act (1984)", "Drug Price Competition Act (1984)"],answer:1},
+      {question:"A patient on carbamazepine for epilepsy is prescribed erythromycin for an infection. The pharmacist should warn about:",options:["Decreased carbamazepine levels due to CYP3A4 induction by erythromycin", "Significantly elevated carbamazepine levels due to CYP3A4 inhibition by erythromycin, risking toxicity", "Decreased erythromycin efficacy", "No clinically significant interaction"],answer:1},
+      {question:"Which route of administration avoids first-pass metabolism and is useful for drugs with extensive hepatic extraction?",options:["Oral", "Intravenous (IV)", "Both oral and intravenous", "Oral sustained-release formulations"],answer:1},
+      {question:"Under HIPAA, a pharmacist may share a patient's medication information without authorization with:",options:["The patient's employer for occupational health purposes", "Another treating healthcare provider involved in the patient's care (treatment exception)", "A patient's family member who requests it over the phone", "A law enforcement agency without a court order"],answer:1},
+      {question:"Which drug interaction mechanism explains why antacids (containing Al3+, Mg2+, Ca2+) reduce the absorption of fluoroquinolone antibiotics?",options:["Alteration of gastric pH reducing fluoroquinolone solubility", "Chelation/complexation forming insoluble, poorly absorbed complexes", "Inhibition of intestinal transporters by divalent cations", "Adsorption of the antibiotic onto the antacid surface"],answer:1},
+      {question:"The Abbé criterion in bioequivalence studies specifies that 90% CIs for AUC and Cmax must fall within:",options:["75–133%", "80–125%", "70–143%", "90–111%"],answer:1},
+      {question:"Which pharmacy practice model focuses on preventing medication-related problems and optimizing drug therapy outcomes through pharmacist-patient collaboration?",options:["Traditional dispensing model", "Medication therapy management (MTM)", "Unit-dose dispensing system", "Automated dispensing cabinet (ADC) management"],answer:1},
+      {question:"A patient is starting lithium for bipolar disorder. Pre-treatment baseline assessments should include:",options:["CBC and liver function tests only", "Renal function (SCr, eGFR), thyroid function (TSH), ECG, and electrolytes", "Urinalysis only", "Serum lithium level before first dose"],answer:1},
+      {question:"Which health literacy concept is assessed when a pharmacist asks a patient to demonstrate back how to use an inhaler?",options:["Written health literacy", "Teach-back method assessing comprehension and technique", "Numeracy health literacy", "Media health literacy"],answer:1},
+      {question:"Under DEA regulations, which practitioner is authorized to issue prescriptions for Schedule II controlled substances?",options:["Any healthcare provider with a state license", "Practitioners registered with the DEA who are licensed to prescribe controlled substances under state law", "Only MDs and DOs", "Only federal healthcare practitioners"],answer:1},
+      {question:"Which antibiotic class is typically avoided in pediatric patients under 8 years of age due to the risk of permanent tooth discoloration and bone growth inhibition?",options:["Penicillins", "Macrolides", "Tetracyclines", "Cephalosporins"],answer:2},
+      {question:"In the context of evidence-based medicine, which study design provides the LOWEST level of evidence?",options:["Systematic review and meta-analysis", "Randomized controlled trial", "Cohort study", "Expert opinion or case report"],answer:3},
+      {question:"Which serum drug level is most critical to monitor for aminoglycosides to prevent ototoxicity?",options:["Peak level (Cmax)", "Trough level (pre-dose)", "AUC level", "Both peak and trough"],answer:3},
+      {question:"The CHADS2-VASc score is used to determine anticoagulation therapy in which condition?",options:["Deep vein thrombosis (DVT)", "Pulmonary embolism", "Non-valvular atrial fibrillation", "Mechanical heart valve patients"],answer:2},
+      {question:"A patient with a severe penicillin allergy (anaphylaxis) needs antibiotic therapy for a gram-positive infection. The safest alternative antibiotic class is:",options:["Cephalosporins (cross-reactivity risk exists but is low)", "Vancomycin", "Carbapenems", "Any beta-lactam at a reduced dose"],answer:1},
+      {question:"Which error-prevention strategy does ISMP recommend for high-alert concentrated electrolytes (e.g., concentrated potassium chloride)?",options:["Store concentrated potassium in patient-care areas for emergency access", "Remove concentrated potassium chloride from patient-care unit stock entirely and provide pharmacy-prepared diluted solutions", "Label the vials with warning stickers only", "Restrict access to licensed nurses only on the floor"],answer:1},
+      {question:"The NDA Paragraph IV certification allows a generic drug applicant to:",options:["Automatically receive FDA approval 6 months after brand-name approval", "Claim the reference listed drug's (RLD) patent is invalid or not infringed to gain earlier market entry", "Extend the brand drug's patent by 5 years", "Submit abbreviated NDA without bioequivalence data"],answer:1},
+      {question:"Which value in clinical pharmacokinetics represents the fraction of the drug that is free (unbound) in plasma?",options:["Volume of distribution (Vd)", "Free fraction (fu = Cu/Ct)", "Plasma clearance (CL)", "Protein binding constant (Ka)"],answer:1},
+      {question:"Grapefruit juice significantly interacts with certain drugs by:",options:["Inducing CYP3A4 in the liver", "Inhibiting intestinal CYP3A4 and P-glycoprotein (P-gp), increasing drug bioavailability", "Chelating divalent cations that affect drug absorption", "Altering gastric pH to reduce drug dissolution"],answer:1},
+      {question:"A patient is started on warfarin 5 mg daily. After 5 days, the INR is 1.5 (target 2–3). The appropriate action is:",options:["Increase the dose by 10% and recheck INR in 1 week", "Continue warfarin at the same dose; the full anticoagulant effect is not achieved until 5–7 days after dose change", "Switch to heparin as warfarin is ineffective", "Double the dose immediately"],answer:1},
+      {question:"Which federal regulation requires child-resistant packaging for oral prescription drugs dispensed to ambulatory patients?",options:["USP <1>", "The Poison Prevention Packaging Act (PPPA) of 1970", "OBRA '90", "The Safe Medical Devices Act"],answer:1},
+      {question:"Acetazolamide (carbonic anhydrase inhibitor) is used to treat altitude sickness primarily because:",options:["It causes diuresis that reduces cerebral edema directly", "It promotes bicarbonate excretion, causing metabolic acidosis that stimulates increased ventilation and oxygenation", "It inhibits renin release, reducing blood pressure at altitude", "It increases red blood cell production"],answer:1},
+      {question:"A 72-year-old patient is started on amiodarone. Which baseline and ongoing monitoring is most critical?",options:["CBC and serum glucose only", "Thyroid function (TSH), liver function tests, pulmonary function (CXR), and ophthalmologic exam due to multi-organ toxicity", "Renal function and electrolytes only", "QTc interval monitoring is the only necessary test"],answer:1},
+      {question:"The Hatch-Waxman Act (Drug Price Competition and Patent Term Restoration Act, 1984) facilitated the approval of generic drugs by:",options:["Eliminating the requirement for bioequivalence studies", "Allowing abbreviated NDA (ANDA) submission showing bioequivalence instead of full clinical trial data", "Automatically approving generics after brand patent expiry", "Requiring the brand company to manufacture the generic drug"],answer:1},
+      {question:"Which pharmacokinetic model describes drugs where drug levels in blood and tissues equilibrate instantaneously?",options:["Two-compartment model", "Multi-compartment model", "One-compartment model", "Physiologically-based pharmacokinetic (PBPK) model"],answer:2},
+      {question:"A patient with mild liver cirrhosis needs pain management. Which opioid analgesic is preferred due to no active metabolites and reliable pharmacokinetics?",options:["Morphine", "Hydromorphone", "Codeine", "Fentanyl (transdermal)"],answer:3},
+      {question:"According to clinical guidelines (ACC/AHA), the target LDL-C goal for a patient with established cardiovascular disease (secondary prevention) on high-intensity statin therapy is:",options:["<130 mg/dL", "<100 mg/dL", "<70 mg/dL (and ideally <55 mg/dL per current guidelines)", "<160 mg/dL"],answer:2},
+      {question:"A pharmacy is conducting a root cause analysis (RCA) after a medication error. The primary goal of RCA is to:",options:["Identify and punish the individual responsible for the error", "Identify systemic factors and process failures that contributed to the error to prevent recurrence", "Document the error for legal protection", "Notify the FDA of the adverse event"],answer:1},
+      {question:"The Black Box Warning (Boxed Warning) in the FDA-approved prescribing information alerts healthcare providers to:",options:["Minor or expected side effects of a medication", "Serious or life-threatening adverse reactions that may lead to death or serious injury", "Off-label uses of the medication", "Pricing and reimbursement information"],answer:1},
+      {question:"Which drug interaction is most likely to cause potentially fatal rhabdomyolysis?",options:["Atorvastatin + warfarin", "Simvastatin (high dose) + gemfibrozil (or strong CYP3A4 inhibitors like clarithromycin)", "Rosuvastatin + ezetimibe", "Atorvastatin + amlodipine"],answer:1},
+      {question:"In drug information resources, which tertiary reference is best for comprehensive drug-drug interaction screening?",options:["AHFS Drug Information", "Lexicomp Drug Interactions or Micromedex DRUG-REAX", "Pharmacist's Letter", "Martindale: The Complete Drug Reference"],answer:1},
+      {question:"A hospital pharmacist reviews an order for tobramycin 5 mg/kg IV every 24 hours (extended-interval dosing). This dosing strategy takes advantage of tobramycin's:",options:["Time-dependent killing — effectiveness correlates with time above MIC", "Concentration-dependent killing — Cmax/MIC ratio predicts efficacy — and post-antibiotic effect (PAE) allowing longer intervals", "Inhibition of resistance mechanisms — 24h dosing prevents resistance", "Improved renal tolerance — lower nephrotoxicity by limiting trough accumulation (incorrect with other rationale)"],answer:1},
+      {question:"According to WHO's 'five moments for hand hygiene' and infection control principles, pharmacists compounding sterile preparations must perform hand hygiene:",options:["Only before entering the cleanroom", "Before and after each compounding task, before donning gloves, and after removing gloves", "Only when visible contamination is present", "After each hourly break only"],answer:1},
+      {question:"Which oral hypoglycemic agent carries the highest risk of hypoglycemia due to its mechanism of stimulating insulin secretion independent of blood glucose levels?",options:["Metformin", "Sitagliptin (DPP-4 inhibitor)", "Glipizide (sulfonylurea)", "Pioglitazone (thiazolidinedione)"],answer:2},
+      {question:"The Affordable Care Act (ACA) of 2010 expanded access to preventive medications by requiring most health insurance plans to cover, without cost-sharing:",options:["All FDA-approved prescription medications", "Preventive medications with A or B USPSTF rating, vaccines, and preventive screenings", "Only generic preventive medications", "Preventive medications for patients over age 65"],answer:1},
+      {question:"When calculating an empirical antibiotic regimen for a neutropenic fever patient, the primary concern is coverage of which organisms?",options:["Anaerobes and atypical organisms", "Gram-negative bacilli (including Pseudomonas aeruginosa) as these cause severe infections in immunocompromised patients", "Streptococcal species only", "Fungal organisms as the first priority"],answer:1},
+      {question:"A drug's therapeutic index (TI) is calculated as:",options:["LD50 / ED50 (lethal dose in 50% / effective dose in 50%)", "ED50 / LD50", "ED99 / LD1", "MEC / MTC"],answer:0},
+      {question:"Which antipsychotic is most commonly associated with metabolic syndrome (weight gain, dyslipidemia, hyperglycemia) requiring monitoring?",options:["Aripiprazole", "Ziprasidone", "Clozapine and olanzapine", "Haloperidol"],answer:2},
+      {question:"The primary reason why elderly patients require lower doses of renally eliminated drugs is:",options:["Increased hepatic metabolism", "Age-related decline in renal function (GFR decreases approximately 1 mL/min/year after age 40)", "Increased gastric acid production", "Higher body fat percentage accelerating drug elimination"],answer:1},
+      {question:"According to ISMP, 'tall man lettering' (e.g., hydrOXYzine vs. hydrALAzine) is used to:",options:["Improve readability on computerized systems", "Differentiate look-alike/sound-alike (LASA) drug names to reduce confusion errors", "Meet FDA labeling requirements for all drugs", "Indicate the drug's mechanism of action"],answer:1},
+      {question:"A medication error analysis identifies that a nurse administered IV insulin instead of IV heparin from a Pyxis automated dispensing cabinet because both were stored next to each other. The contributing factor is:",options:["Nurse's lack of training", "Poor lighting in the medication room", "Inadequate storage separation of high-alert medications (system failure, not individual failure)", "Pharmacist verification failure only"],answer:2},
+      {question:"Which drug used in anesthesia can trigger malignant hyperthermia in susceptible patients due to a defect in ryanodine receptor regulation?",options:["Propofol", "Succinylcholine and volatile halogenated anesthetics (e.g., halothane, sevoflurane)", "Midazolam", "Ketamine"],answer:1},
+      {question:"A patient reports using aspirin 325 mg daily for heart disease and takes ibuprofen for arthritis. The pharmacist should counsel that:",options:["Ibuprofen can be taken at any time without concern", "Ibuprofen taken before aspirin may interfere with aspirin's irreversible COX-1 inhibition and reduce its cardioprotective effect", "Aspirin and ibuprofen work synergistically to protect the heart", "Aspirin should be discontinued in favor of ibuprofen alone"],answer:1},
+      {question:"Which drug requires a REMS program specifically because of the risk of progressive multifocal leukoencephalopathy (PML) caused by JC virus reactivation?",options:["Rituximab", "Natalizumab (Tysabri)", "Alemtuzumab", "Ocrelizumab"],answer:1},
+      {question:"According to the pharmacy law, a transferable prescription may be transferred between pharmacies how many times for a controlled substance in Schedule III-V?",options:["As many times as refills allow", "One time only (unless a real-time electronic database is shared between pharmacies)", "Up to 5 times in 6 months", "Unlimited, any number of times until refills are exhausted"],answer:1},
+      {question:"Which herbal supplement is most well-documented to interact with warfarin, potentially increasing bleeding risk by inhibiting platelet aggregation?",options:["Echinacea", "Ginkgo biloba, garlic, ginger, and fish oil (antiplatelet effects)", "Valerian root", "Chamomile tea (moderate interaction only)"],answer:1},
+      {question:"Pharmacists can assess adherence using the medication possession ratio (MPR) or proportion of days covered (PDC). A PDC below what threshold is considered non-adherent?",options:["90%", "80%", "70%", "50%"],answer:1},
+      {question:"Which statement about therapeutic substitution versus generic substitution is CORRECT?",options:["Both require no prescriber authorization", "Generic substitution uses a different chemical entity; therapeutic substitution uses the same chemical entity", "Generic substitution replaces the brand drug with the same drug at the same dose; therapeutic substitution replaces the drug with a different drug achieving the same therapeutic goal", "Both are legal without prescriber consent in all states"],answer:2},
+      {question:"A patient taking tacrolimus (a calcineurin inhibitor) for transplant immunosuppression receives a prescription for fluconazole. The expected interaction is:",options:["Decreased tacrolimus levels, requiring dose increase", "Increased tacrolimus levels due to CYP3A4 inhibition by fluconazole, requiring dose reduction and close monitoring", "Decreased tacrolimus efficacy due to immunological interaction", "No clinically significant interaction"],answer:1},
+      {question:"According to GCP (Good Clinical Practice) guidelines, informed consent for clinical trial participants must include:",options:["Only the study purpose and expected duration", "A comprehensive description of foreseeable risks, benefits, alternatives, confidentiality assurances, and the voluntary nature of participation", "Only information about compensation for participation", "A guarantee of therapeutic benefit from participation"],answer:1},
+      {question:"The absolute bioavailability of a drug taken orally is calculated as:",options:["AUCoral / AUCiv × 100%", "AUCiv / AUCoral × 100%", "Cmax_oral / Cmax_iv × 100%", "Dose_oral / Dose_iv × 100%"],answer:0},
+      {question:"Which statement regarding Schedule V controlled substances is CORRECT?",options:["All Schedule V drugs require a DEA Form 222 for ordering", "In some states, Schedule V preparations (e.g., cough preparations with limited codeine) may be sold OTC by a pharmacist with proper documentation", "Schedule V drugs have no accepted medical use", "Schedule V drugs cannot be refilled under any circumstances"],answer:1},
+      {question:"Clozapine requires mandatory enrollment in the REMS program primarily due to which life-threatening adverse effect?",options:["Severe photosensitivity", "Agranulocytosis (potentially fatal neutropenia), requiring mandatory ANC monitoring", "QT prolongation causing torsades de pointes", "Severe hepatotoxicity with liver failure"],answer:1},
+      {question:"In designing a counseling session using the 'Ask Me 3' patient education approach, what are the three core questions patients should understand?",options:["What is my diagnosis? What are my tests? What is my prognosis?", "What is my main problem? What do I need to do? Why is it important for me to do this?", "What is my medication? What is the dose? What are the side effects?", "When do I take it? How do I take it? What should I avoid?"],answer:1},
+      {question:"Which antiviral class is used for treatment of chronic hepatitis C and acts by inhibiting NS5B RNA-dependent RNA polymerase?",options:["NS3/4A protease inhibitors (e.g., glecaprevir)", "NS5A inhibitors (e.g., ledipasvir)", "NS5B nucleoside polymerase inhibitors (e.g., sofosbuvir)", "Interferon-alpha analogues"],answer:2},
+      {question:"The Naranjo Adverse Drug Reaction Probability Scale assesses the probability that an adverse event is caused by a drug. A score of 9 or more is classified as:",options:["Possible", "Probable", "Certain/definite", "Doubtful"],answer:2},
+      {question:"Which regulatory agency oversees the safety and efficacy of biologics (including vaccines and blood products) in the United States?",options:["FDA's Center for Drug Evaluation and Research (CDER)", "FDA's Center for Biologics Evaluation and Research (CBER)", "NIH's National Cancer Institute", "CDC's Center for Vaccine Safety"],answer:1},
+      {question:"A patient's drug regimen is changed from tacrolimus to sirolimus after a renal transplant due to nephrotoxicity. Sirolimus works by:",options:["Inhibiting calcineurin to reduce IL-2 production", "Inhibiting mTOR (mammalian target of rapamycin) to block T-cell proliferation", "Inhibiting IMPDH to reduce purine synthesis", "Depleting T-lymphocytes via anti-CD3 antibody mechanism"],answer:1},
+      {question:"Which type of study is most susceptible to selection bias and is often criticized for its inability to establish causation?",options:["Randomized controlled trial (RCT)", "Systematic review", "Cross-sectional study and case-control studies", "Double-blind cohort study"],answer:2},
+      {question:"According to federal law, pharmacists must report serious adverse events from OTC medications using which mechanism?",options:["MedWatch (FDA Adverse Event Reporting System, FAERS)", "VAERS (for vaccines only)", "CDC surveillance reporting", "DEA adverse event reporting system"],answer:0},
+      {question:"A patient on lamotrigine (an antiepileptic) is started on valproic acid. The expected pharmacokinetic interaction is:",options:["Valproic acid induces UGT glucuronidation, decreasing lamotrigine levels", "Valproic acid inhibits glucuronidation of lamotrigine, significantly increasing lamotrigine levels and toxicity risk (SJS risk)", "No interaction between these two antiepileptics", "Lamotrigine decreases valproic acid absorption"],answer:1},
+      {question:"The Orange Book (Approved Drug Products with Therapeutic Equivalence Evaluations) is published by the FDA and is used primarily to:",options:["List all available generic drugs on the market", "Identify approved drug products and their therapeutic equivalence ratings (e.g., AB-rated generics) for generic substitution decisions", "Provide dosing information for renally impaired patients", "List controlled substances and their schedules"],answer:1},
+      {question:"Which non-pharmacological therapy is recommended as first-line treatment for insomnia before initiating pharmacological agents?",options:["Low-dose benzodiazepines", "Cognitive Behavioral Therapy for Insomnia (CBT-I)", "OTC diphenhydramine (Benadryl)", "Zolpidem 10 mg at bedtime"],answer:1},
+      {question:"A patient with renal impairment (CrCl 20 mL/min) is prescribed gabapentin for neuropathic pain. The expected adjustment is:",options:["No change needed; gabapentin is hepatically metabolized", "Significant dose reduction required; gabapentin is renally excreted unchanged", "Gabapentin is contraindicated in renal impairment", "Increase dose to compensate for reduced receptor sensitivity"],answer:1},
+      {question:"Which component of a medication error report is most important for system improvement?",options:["Name of the pharmacist who made the error", "The contributing factors (system failures, environmental conditions, human factors) that led to the error", "The exact time of the error", "The patient's medical record number"],answer:1},
+      {question:"According to Joint Commission standards, tall man lettering should be used for look-alike/sound-alike drug names to minimize:",options:["Label printing costs", "Wrong drug errors due to name confusion", "Storage issues in automated dispensing cabinets", "Formulary substitution errors"],answer:1},
+      {question:"The Pharmacy Compounding Accreditation Board (PCAB) provides accreditation for compounding pharmacies. Which USP chapter specifically addresses hazardous drug handling in compounding?",options:["USP <795>", "USP <797>", "USP <800>", "USP <1075>"],answer:2},
+      {question:"A patient taking isotretinoin (Accutane) must use two forms of contraception because isotretinoin:",options:["Interacts with oral contraceptives, reducing their efficacy", "Is a potent teratogen (Category X) causing severe birth defects", "Causes menstrual irregularities requiring hormonal contraception", "Interacts with progestin-only contraceptives"],answer:1},
+      {question:"Which adverse effect is most associated with bupropion (Wellbutrin/Zyban) at high doses, limiting its use in at-risk patients?",options:["QT prolongation", "Seizures (dose-dependent risk; contraindicated in patients with seizure disorders or eating disorders)", "Serotonin syndrome", "Agranulocytosis"],answer:1},
+      {question:"Niacin (vitamin B3) at pharmacological doses lowers triglycerides and raises HDL by:",options:["Inhibiting HMG-CoA reductase", "Inhibiting lipolysis in adipose tissue (reducing free fatty acids reaching the liver) via GPR109A receptor", "Activating PPAR-alpha in the liver", "Inhibiting bile acid reabsorption in the gut"],answer:1},
+      {question:"A systematic review that encounters high heterogeneity (I² > 75%) between studies should:",options:["Pool results using a fixed-effects model", "Pool results using a random-effects model and investigate sources of heterogeneity", "Report the meta-analysis as invalid", "Include only the largest study in the analysis"],answer:1},
+      {question:"The principle of non-maleficence in pharmacy ethics means:",options:["The pharmacist must always act in the best interest of the patient (beneficence)", "The pharmacist has a duty to respect patient autonomy", "The pharmacist has an obligation to avoid causing harm to patients", "The pharmacist must treat all patients fairly and equally (justice)"],answer:2},
+      {question:"Which class of antibiotic is associated with 'Red Man Syndrome' (flushing, erythema, hypotension) when infused too rapidly?",options:["Aminoglycosides", "Fluoroquinolones", "Vancomycin", "Carbapenems"],answer:2},
+      {question:"A patient on lithium is started on an NSAID (e.g., ibuprofen). The pharmacist should monitor for:",options:["Decreased lithium levels due to increased renal clearance", "Lithium toxicity due to NSAID-induced reduction in renal lithium clearance (NSAIDs reduce renal prostaglandins affecting GFR)", "Increased risk of NSAID-induced GI bleeding only", "Worsening of bipolar symptoms due to NSAID interference with lithium's mechanism"],answer:1},
+      {question:"In the context of pharmacogenomics, a patient who is a CYP2D6 ultra-rapid metabolizer will likely experience which effect with codeine?",options:["Reduced efficacy due to slow conversion to morphine", "Normal analgesic response", "Increased toxicity due to rapid conversion of codeine to morphine (risk of respiratory depression, especially in neonates of nursing mothers)", "No difference compared to normal metabolizers"],answer:2},
+      {question:"According to the WHO Model List, essential medicines are defined as those that:",options:["Are the most expensive drugs available", "Satisfy the priority health care needs of the population and are available at all times in adequate amounts", "Have the fewest side effects", "Are manufactured domestically within each country"],answer:1},
+      {question:"Which concept in pharmacoeconomics describes the additional cost required to gain one additional QALY compared to the current standard of care?",options:["Cost-minimization ratio", "Incremental cost-effectiveness ratio (ICER)", "Net monetary benefit (NMB)", "Willingness-to-pay threshold"],answer:1},
+      {question:"A pediatric patient weighing 22 kg requires amoxicillin for otitis media. The recommended dose is 40-45 mg/kg/day divided every 8 hours. The appropriate dose per administration is approximately:",options:["125 mg every 8 hours", "250 mg every 8 hours", "500 mg every 8 hours", "875 mg every 12 hours"],answer:1},
+      {question:"According to USP <797>, a Category 2 compounded sterile preparation (formerly 'medium-risk') stored at controlled room temperature has a BUD of:",options:["12 hours", "24 hours", "30 days", "45 days"],answer:1},
+      {question:"Which antidote is used for acetylcholinesterase inhibitor (e.g., neostigmine) overdose causing a cholinergic crisis?",options:["Naloxone", "Physostigmine", "Atropine", "Pralidoxime"],answer:2},
+      {question:"The principle of 'pharmacovigilance' requires health professionals to report adverse drug reactions. In the US, the primary reporting system for prescription drug ADRs is:",options:["The DEA adverse event system", "FDA MedWatch (FAERS — FDA Adverse Event Reporting System)", "The CDC's National Electronic Injury Surveillance System", "The Joint Commission's Sentinel Event Database"],answer:1},
+      {question:"A patient with atrial fibrillation and a CrCl of 25 mL/min needs anticoagulation. Which DOAC requires the most careful renal dose adjustment or may be contraindicated?",options:["Apixaban", "Rivaroxaban", "Edoxaban", "Dabigatran (primarily renally excreted at ~80%; contraindicated in severe renal failure CrCl < 30 mL/min)"],answer:3},
+      {question:"Which pharmacist-led intervention has demonstrated the strongest evidence for improving medication adherence in chronic disease management?",options:["Written medication instructions only", "Pharmacist-delivered telephonic or in-person MTM services with patient follow-up and education", "Automated pill reminders (apps) alone", "Providing 90-day supplies without additional counseling"],answer:1},
+      {question:"According to drug information hierarchy, a primary literature source would be:",options:["The USP Drug Information (USP-DI) textbook", "A peer-reviewed original research article published in a clinical pharmacy journal", "A drug interaction database (Lexicomp, Clinical Pharmacology)", "A clinical practice guideline from ACC/AHA"],answer:1},
+      {question:"Fluoride supplementation in children is recommended primarily to prevent:",options:["Rickets", "Dental caries (tooth decay) by strengthening enamel and inhibiting bacterial enzyme activity", "Iron-deficiency anemia", "Vitamin D deficiency-related growth disorders"],answer:1},
+      {question:"Which statement correctly describes the difference between efficacy and effectiveness in clinical research?",options:["Efficacy refers to real-world performance; effectiveness refers to ideal trial conditions", "Efficacy measures how well a drug works under controlled ideal conditions (RCT); effectiveness measures performance in real-world clinical practice", "They are synonymous terms used interchangeably", "Effectiveness is always higher than efficacy in all situations"],answer:1},
+      {question:"A patient is taking methotrexate for rheumatoid arthritis and is started on trimethoprim/sulfamethoxazole (TMP-SMX) for a UTI. The primary concern is:",options:["Reduced methotrexate efficacy", "Additive antifolate effect causing severe bone marrow suppression (both are antifolates)", "TMP-SMX-induced renal failure reducing methotrexate clearance", "Reduced TMP-SMX efficacy due to methotrexate interaction"],answer:1},
+      {question:"Which route of administration provides the most rapid onset for the treatment of a seizure in a patient without IV access?",options:["Oral", "Intranasal or buccal midazolam (rapid absorption across nasal/buccal mucosa)", "Rectal diazepam", "Intramuscular lorazepam"],answer:1},
+      {question:"A patient with schizophrenia is non-adherent to oral antipsychotic therapy. The best pharmacological strategy to improve adherence is:",options:["Doubling the oral dose to ensure adequate absorption", "Switching to a long-acting injectable (LAI) antipsychotic formulation (e.g., paliperidone palmitate, risperidone microspheres)", "Adding a second antipsychotic drug", "Prescribing the medication in liquid form"],answer:1},
+      {question:"Which statement about pharmacist-prescribed medications under collaborative drug therapy agreements (CDTAs) is CORRECT?",options:["Pharmacists may prescribe any drug under a CDTA without restriction", "CDTAs are illegal at the federal level", "CDTAs allow pharmacists to initiate, modify, or discontinue drug therapy under a written agreement with a physician, within the scope defined by the agreement and state law", "CDTAs only apply to pharmacists in hospital settings"],answer:2},
+      {question:"The recommended first-line treatment for uncomplicated Helicobacter pylori eradication in areas with high clarithromycin resistance is:",options:["Standard triple therapy (PPI + amoxicillin + clarithromycin)", "Bismuth quadruple therapy (PPI + bismuth + metronidazole + tetracycline)", "Dual therapy (PPI + amoxicillin high dose)", "Sequential therapy is the only first-line option"],answer:1},
+      {question:"Which biomarker is used to diagnose and monitor acute kidney injury (AKI) in the hospital setting?",options:["Serum albumin", "Serum creatinine and urine output (rising creatinine and/or decreased urine output define AKI by KDIGO criteria)", "BUN alone", "24-hour urine protein"],answer:1},
+      {question:"A drug's intrinsic clearance (CLint) reflects:",options:["The total body clearance", "The metabolic capacity of the liver independent of flow and protein binding", "Renal clearance only", "The clearance attributable to protein binding"],answer:1},
+      {question:"According to pharmacokinetic principles, the extraction ratio (E) is defined as:",options:["The fraction of drug absorbed after oral administration", "The fraction of drug removed from the blood during a single pass through the organ (e.g., liver)", "The ratio of free to bound drug in plasma", "The ratio of renal clearance to total clearance"],answer:1},
+      {question:"Which adverse effect unique to clindamycin should always be communicated to patients?",options:["Ototoxicity requiring audiometry monitoring", "Photosensitivity requiring sunscreen use", "Pseudomembranous colitis (C. difficile infection) — contact provider immediately for diarrhea", "Nephrotoxicity requiring SCr monitoring"],answer:2},
+      {question:"According to the STOPP criteria, which medication is considered potentially inappropriate in the elderly?",options:["Metoprolol for heart failure with reduced ejection fraction", "Proton pump inhibitor for active peptic ulcer", "Long-term (> 4 weeks) use of first-generation antihistamines (e.g., diphenhydramine) due to anticholinergic effects", "Lisinopril for diabetic nephropathy"],answer:2},
+      {question:"Which drug interaction can result in additive QT prolongation and should be avoided?",options:["Azithromycin + antacids", "Azithromycin + haloperidol (both prolong QT interval — risk of torsades de pointes)", "Azithromycin + metformin", "Azithromycin + lisinopril"],answer:1},
+      {question:"The 'seven rights of medication administration' in healthcare include: Right patient, Right drug, Right dose, Right route, Right time, Right documentation, and:",options:["Right price", "Right reason/indication", "Right prescriber", "Right pharmacist verification"],answer:1}
+];
+
+/* ================================================================
+   TEST DEFINITIONS
+================================================================ */
 const TEST_DURATION_SECONDS = 3 * 60 * 60; // 3 hours
-const TOTAL_QUESTIONS = 200;
 
 const TESTS = [
   {
     id: "test_1",
     name: "FPGEE Test Series — Set 1",
-    description: "Covers Pharmacology, Pharmaceutical Sciences, and Pharmacy Practice fundamentals for the FPGEE board exam.",
-    badge: "Set 1",
-    badgeClass: "",
-    questions: [
-      /* ─────────────────────────────────────────────────────────
-         TEST 1 — QUESTIONS 1–5 (Sample Questions)
-         Paste Questions 6–200 below in the same format.
-      ───────────────────────────────────────────────────────── */
-      {
-        question: "Which class of antibiotics inhibits bacterial cell wall synthesis by binding to penicillin-binding proteins (PBPs)?",
-        options: [
-          "Fluoroquinolones",
-          "Beta-lactams",
-          "Aminoglycosides",
-          "Macrolides"
-        ],
-        answer: 1
-      },
-      {
-        question: "A patient is prescribed warfarin and begins taking rifampin for tuberculosis treatment. Which pharmacokinetic interaction should the pharmacist be most concerned about?",
-        options: [
-          "Rifampin inhibits CYP2C9, increasing warfarin levels",
-          "Rifampin induces CYP2C9, decreasing warfarin levels and increasing clotting risk",
-          "Rifampin displaces warfarin from plasma protein binding sites",
-          "Rifampin reduces renal clearance of warfarin"
-        ],
-        answer: 1
-      },
-      {
-        question: "The Henderson-Hasselbalch equation is used to calculate the ratio of ionized to unionized drug. For a weak acid with pKa = 4.4, what fraction will be ionized at blood pH of 7.4?",
-        options: [
-          "Approximately 50% ionized",
-          "Approximately 10% ionized",
-          "Greater than 99% ionized",
-          "Approximately 1% ionized"
-        ],
-        answer: 2
-      },
-      {
-        question: "Which neurotransmitter is primarily deficient in Parkinson's disease, leading to the motor symptoms seen in patients?",
-        options: [
-          "Acetylcholine",
-          "Serotonin",
-          "Dopamine",
-          "GABA"
-        ],
-        answer: 2
-      },
-      {
-        question: "A pharmacy receives a prescription for methotrexate 2.5 mg tablets, with directions to take 6 tablets once weekly for rheumatoid arthritis. The pharmacist's primary counseling point should be:",
-        options: [
-          "Take the medication daily for best results",
-          "Avoid excessive sun exposure due to photosensitivity",
-          "Take supplemental folic acid to reduce toxicity risk",
-          "Avoid taking with food to improve absorption"
-        ],
-        answer: 2
-      }
-      /* ─── PASTE TEST 1 QUESTIONS 6–200 BELOW THIS LINE ─── */
-    ]
+    description: "Covers Pharmacology, Pharmaceutical Sciences, Biopharmaceutics, and core Pharmacy Practice fundamentals.",
+    badge: "Set 1", badgeClass: "",
+    questions: QUESTIONS_T1
   },
   {
     id: "test_2",
     name: "FPGEE Test Series — Set 2",
     description: "Advanced clinical scenarios covering Pharmacotherapeutics, Drug Interactions, Biostatistics, and Federal Pharmacy Law.",
-    badge: "Set 2",
-    badgeClass: "teal",
-    questions: [
-      /* ─────────────────────────────────────────────────────────
-         TEST 2 — QUESTIONS 1–5 (Sample Questions)
-         Paste Questions 6–200 below in the same format.
-      ───────────────────────────────────────────────────────── */
-      {
-        question: "Under the Durham-Humphrey Amendment to the Federal Food, Drug and Cosmetic Act, which of the following statements is CORRECT regarding prescription drugs?",
-        options: [
-          "Prescription drugs can be dispensed without a prescription if the pharmacist deems it safe",
-          "Prescription drugs must bear the legend 'Rx Only' and can only be dispensed with a valid prescription",
-          "All Schedule V controlled substances require a written prescription",
-          "Prescription-only status is determined solely by the pharmacist"
-        ],
-        answer: 1
-      },
-      {
-        question: "A patient with Type 2 diabetes has an eGFR of 28 mL/min/1.73m². Which antidiabetic medication is CONTRAINDICATED in this patient?",
-        options: [
-          "Insulin glargine",
-          "Sitagliptin (dose adjustment only)",
-          "Metformin",
-          "Pioglitazone"
-        ],
-        answer: 2
-      },
-      {
-        question: "The volume of distribution (Vd) of a drug is calculated to be 700 L in a 70 kg patient. This finding suggests that the drug:",
-        options: [
-          "Is primarily confined to plasma",
-          "Is extensively distributed into peripheral tissues",
-          "Has low plasma protein binding",
-          "Is rapidly eliminated by the kidneys"
-        ],
-        answer: 1
-      },
-      {
-        question: "Which of the following ophthalmic beta-blockers used for glaucoma is cardioselective (beta-1 selective)?",
-        options: [
-          "Timolol",
-          "Carteolol",
-          "Betaxolol",
-          "Levobunolol"
-        ],
-        answer: 2
-      },
-      {
-        question: "According to USP <797>, what is the maximum Beyond-Use Date (BUD) for a low-risk compounded sterile preparation stored at room temperature (20–25°C)?",
-        options: [
-          "24 hours",
-          "14 days",
-          "48 hours",
-          "30 days"
-        ],
-        answer: 2
-      }
-      /* ─── PASTE TEST 2 QUESTIONS 6–200 BELOW THIS LINE ─── */
-    ]
+    badge: "Set 2", badgeClass: "teal",
+    questions: QUESTIONS_T2
   }
 ];
 
 /* ================================================================
    APP STATE
 ================================================================ */
-let currentUser   = null;   // { name, email, password }
-let activeTest    = null;   // test object from TESTS[]
-let userAnswers   = [];     // array indexed by question index, value = option index or null
+let currentUser   = null;
+let userProfile   = null;  // { name, email }
+let activeTest    = null;
+let userAnswers   = [];
 let currentQIndex = 0;
 let timerInterval = null;
-let timeElapsed   = 0;      // seconds elapsed since test start
+let timeElapsed   = 0;
 let timeLimit     = TEST_DURATION_SECONDS;
-let testStartTime = null;
+let lastSavedAttempt = null;
 
 /* ================================================================
-   LOCAL STORAGE HELPERS
+   FIRESTORE HELPERS
 ================================================================ */
-const LS_USERS   = 'crx_users';
-const LS_SESSION = 'crx_session';
-const LS_HISTORY = 'crx_history';
-
-function getUsers()   { return JSON.parse(localStorage.getItem(LS_USERS)   || '[]'); }
-function saveUsers(u) { localStorage.setItem(LS_USERS, JSON.stringify(u)); }
-
-function getSession()     { return JSON.parse(localStorage.getItem(LS_SESSION) || 'null'); }
-function saveSession(u)   { localStorage.setItem(LS_SESSION, JSON.stringify(u)); }
-function clearSession()   { localStorage.removeItem(LS_SESSION); }
-
-function getHistory()     { return JSON.parse(localStorage.getItem(LS_HISTORY) || '{}'); }
-function saveHistory(h)   { localStorage.setItem(LS_HISTORY, JSON.stringify(h)); }
-
-function getUserHistory(email) {
-  const h = getHistory();
-  return h[email] || [];
+function getUserDocRef(uid) {
+  return db.collection("users").doc(uid);
 }
-function addAttempt(email, attempt) {
-  const h = getHistory();
-  if (!h[email]) h[email] = [];
-  h[email].unshift(attempt); // newest first
-  saveHistory(h);
+
+async function loadUserHistory() {
+  try {
+    const doc = await getUserDocRef(currentUser.uid).get();
+    if (doc.exists) {
+      return doc.data().history || [];
+    }
+    return [];
+  } catch (e) {
+    console.error("Firestore load error:", e);
+    return [];
+  }
+}
+
+async function saveAttemptToFirestore(attempt) {
+  try {
+    const ref = getUserDocRef(currentUser.uid);
+    const doc = await ref.get();
+    let history = doc.exists ? (doc.data().history || []) : [];
+    history.unshift(attempt);
+    await ref.set({ name: userProfile.name, email: userProfile.email, history }, { merge: true });
+  } catch (e) {
+    console.error("Firestore save error:", e);
+    showToast("Could not save attempt to cloud. Check your connection.", "error");
+  }
+}
+
+async function saveUserProfile(uid, name, email) {
+  try {
+    await db.collection("users").doc(uid).set({ name, email, history: [] }, { merge: true });
+  } catch (e) {
+    console.error("Profile save error:", e);
+  }
 }
 
 /* ================================================================
-   AUTH
+   FIREBASE AUTH
 ================================================================ */
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
-  const email = document.getElementById('login-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('login-pass').value;
-  const errEl = document.getElementById('login-error');
-  errEl.textContent = '';
+  const email = document.getElementById("login-email").value.trim();
+  const pass  = document.getElementById("login-pass").value;
+  const errEl = document.getElementById("login-error");
+  const btn   = document.getElementById("login-btn");
+  errEl.textContent = "";
+  btn.textContent = "Signing in..."; btn.disabled = true;
 
-  const users = getUsers();
-  const user  = users.find(u => u.email === email && u.password === pass);
-  if (!user) {
-    errEl.textContent = 'Incorrect email or password.';
-    return;
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged handles the rest
+  } catch (err) {
+    btn.textContent = "Login to Dashboard"; btn.disabled = false;
+    errEl.textContent = friendlyAuthError(err.code);
   }
-  saveSession(user);
-  currentUser = user;
-  showDashboard();
-  showToast('Welcome back, ' + user.name.split(' ')[0] + '!', 'success');
 }
 
-function handleRegister(e) {
+async function handleRegister(e) {
   e.preventDefault();
-  const name  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('reg-pass').value;
-  const errEl = document.getElementById('reg-error');
-  errEl.textContent = '';
+  const name  = document.getElementById("reg-name").value.trim();
+  const email = document.getElementById("reg-email").value.trim();
+  const pass  = document.getElementById("reg-pass").value;
+  const errEl = document.getElementById("reg-error");
+  const btn   = document.getElementById("reg-btn");
+  errEl.textContent = "";
+  if (name.length < 2) { errEl.textContent = "Please enter your full name."; return; }
+  btn.textContent = "Creating account..."; btn.disabled = true;
 
-  if (name.length < 2) { errEl.textContent = 'Please enter your full name.'; return; }
-
-  const users = getUsers();
-  if (users.find(u => u.email === email)) {
-    errEl.textContent = 'An account with this email already exists.';
-    return;
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: name });
+    await saveUserProfile(cred.user.uid, name, email);
+    // onAuthStateChanged handles the rest
+  } catch (err) {
+    btn.textContent = "Create Account"; btn.disabled = false;
+    errEl.textContent = friendlyAuthError(err.code);
   }
-
-  const newUser = { name, email, password: pass };
-  users.push(newUser);
-  saveUsers(users);
-  saveSession(newUser);
-  currentUser = newUser;
-  showDashboard();
-  showToast('Account created! Welcome, ' + name.split(' ')[0] + '!', 'success');
 }
 
-function logout() {
-  clearSession();
-  currentUser = null;
-  showLanding();
-  showToast('Logged out successfully.');
+async function logout() {
+  try {
+    await auth.signOut();
+  } catch(e) {}
+}
+
+function friendlyAuthError(code) {
+  const map = {
+    "auth/user-not-found":      "No account found with this email.",
+    "auth/wrong-password":       "Incorrect password.",
+    "auth/email-already-in-use": "An account with this email already exists.",
+    "auth/invalid-email":        "Please enter a valid email address.",
+    "auth/weak-password":        "Password must be at least 6 characters.",
+    "auth/too-many-requests":    "Too many failed attempts. Please try again later.",
+    "auth/invalid-credential":   "Incorrect email or password.",
+    "auth/network-request-failed": "Network error. Please check your connection."
+  };
+  return map[code] || "Authentication failed. Please try again.";
+}
+
+/* ================================================================
+   AUTH STATE LISTENER — Central routing hub
+================================================================ */
+auth.onAuthStateChanged(async (user) => {
+  hideLoading();
+  if (user) {
+    currentUser = user;
+    // Get display name from Firebase Auth or Firestore
+    let name = user.displayName;
+    if (!name) {
+      try {
+        const doc = await getUserDocRef(user.uid).get();
+        if (doc.exists) name = doc.data().name || user.email.split("@")[0];
+        else name = user.email.split("@")[0];
+      } catch { name = user.email.split("@")[0]; }
+    }
+    userProfile = { name, email: user.email };
+    showDashboard();
+  } else {
+    currentUser = null;
+    userProfile = null;
+    showLanding();
+  }
+});
+
+function hideLoading() {
+  const el = document.getElementById("loading-overlay");
+  if (el) { el.style.opacity = "0"; el.style.transition = "opacity 0.4s"; setTimeout(() => el.remove(), 400); }
 }
 
 /* ================================================================
    PAGE NAVIGATION
 ================================================================ */
 function showPage(id) {
-  ['page-landing','page-dashboard','page-test','page-results'].forEach(p => {
-    document.getElementById(p).classList.add('hidden');
+  ["page-landing","page-dashboard","page-test","page-results"].forEach(p => {
+    document.getElementById(p).classList.add("hidden");
   });
-  document.getElementById(id).classList.remove('hidden');
+  document.getElementById(id).classList.remove("hidden");
   window.scrollTo(0, 0);
 }
-
-function showLanding() {
-  showPage('page-landing');
-}
-
-function showDashboard() {
-  showPage('page-dashboard');
-  renderDashboard();
-}
-
-function showTest(testId) {
-  activeTest = TESTS.find(t => t.id === testId);
-  if (!activeTest) return;
-  userAnswers   = new Array(activeTest.questions.length).fill(null);
-  currentQIndex = 0;
-  timeElapsed   = 0;
-  testStartTime = Date.now();
-  showPage('page-test');
-  document.getElementById('test-title-bar').textContent = activeTest.name;
-  renderQPalette();
-  renderQuestion();
-  startTimer();
-}
-
-function returnToDashboard() {
-  stopTimer();
-  showDashboard();
-}
+function showLanding()   { showPage("page-landing"); }
+function showDashboard() { showPage("page-dashboard"); renderDashboard(); }
+function returnToDashboard() { stopTimer(); showDashboard(); }
 
 /* ================================================================
-   DASHBOARD RENDER
+   DASHBOARD
 ================================================================ */
-function renderDashboard() {
-  // Greeting
-  const name = currentUser.name.split(' ')[0];
-  document.getElementById('dash-username').textContent = name;
-  document.getElementById('dash-avatar').textContent = name.charAt(0).toUpperCase();
+async function renderDashboard() {
+  const name = userProfile ? userProfile.name.split(" ")[0] : "Student";
+  document.getElementById("dash-username").textContent = name;
+  document.getElementById("dash-avatar").textContent   = name.charAt(0).toUpperCase();
+
+  const history = await loadUserHistory();
 
   // Test cards
-  const grid = document.getElementById('test-cards-grid');
-  grid.innerHTML = '';
-  const history = getUserHistory(currentUser.email);
-
+  const grid = document.getElementById("test-cards-grid");
+  grid.innerHTML = "";
   TESTS.forEach(test => {
     const attempts = history.filter(h => h.testId === test.id);
-    const card = document.createElement('div');
-    card.className = 'test-card';
+    const best = attempts.length ? Math.max(...attempts.map(a => a.pct)) : null;
+    const card = document.createElement("div");
+    card.className = "test-card";
     card.innerHTML = `
       <div class="test-card-header">
         <h3>${test.name}</h3>
@@ -1096,140 +1417,89 @@ function renderDashboard() {
       </div>
       <p>${test.description}</p>
       <div class="test-meta">
-        <div class="test-meta-item"><span class="ico">📋</span> ${TOTAL_QUESTIONS} Questions</div>
+        <div class="test-meta-item"><span class="ico">📋</span> 200 Questions</div>
         <div class="test-meta-item"><span class="ico">⏱️</span> 3 Hours</div>
         <div class="test-meta-item"><span class="ico">🔁</span> Unlimited Attempts</div>
+        ${best !== null ? `<div class="test-meta-item"><span class="ico">🏆</span> Best: ${best}%</div>` : ""}
       </div>
       <div class="test-card-footer">
-        <span class="test-attempts">${attempts.length} attempt${attempts.length !== 1 ? 's' : ''} taken</span>
+        <span class="test-attempts">${attempts.length} attempt${attempts.length !== 1 ? "s" : ""} taken</span>
         <button class="btn btn-primary" onclick="startTest('${test.id}')">Start Test &#8594;</button>
-      </div>
-    `;
+      </div>`;
     grid.appendChild(card);
   });
 
-  // History table
   renderHistory(history);
-
-  // Chart
   renderChart(history);
 }
 
 function renderHistory(history) {
-  const container = document.getElementById('history-container');
+  const container = document.getElementById("history-container");
   if (!history.length) {
-    container.innerHTML = '<p class="history-empty">No attempts yet. Start a test series to see your history here.</p>';
+    container.innerHTML = "<p class='history-empty'>No attempts yet. Start a test series to build your history.</p>";
     return;
   }
-
-  let rows = history.map(h => {
-    const pct = Math.round((h.correct / h.total) * 100);
-    const cls  = pct >= 75 ? 'pass' : pct >= 50 ? 'avg' : 'fail';
+  const rows = history.map(h => {
+    const pct = h.pct;
+    const cls = pct >= 75 ? "pass" : pct >= 50 ? "avg" : "fail";
     const testName = TESTS.find(t => t.id === h.testId)?.badge || h.testId;
     return `<tr>
       <td>${h.date}</td>
       <td>${testName}</td>
       <td><span class="score-pill ${cls}">${h.correct} / ${h.total} (${pct}%)</span></td>
-      <td>${h.correct}</td>
-      <td>${h.wrong}</td>
-      <td>${h.skipped}</td>
+      <td>${h.correct}</td><td>${h.wrong}</td><td>${h.skipped}</td>
       <td>${h.timeTaken}</td>
     </tr>`;
-  }).join('');
-
+  }).join("");
   container.innerHTML = `
     <div class="history-table-wrap">
       <table class="history-table">
-        <thead>
-          <tr>
-            <th>Date</th><th>Test</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Skipped</th><th>Time</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Date</th><th>Test</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Skipped</th><th>Time</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
 }
 
 function renderChart(history) {
-  const canvas = document.getElementById('score-chart');
-  const emptyEl = document.getElementById('chart-empty');
-
-  if (!history.length) {
-    canvas.classList.add('hidden');
-    emptyEl.classList.remove('hidden');
-    return;
-  }
-
-  canvas.classList.remove('hidden');
-  emptyEl.classList.add('hidden');
-
-  // Show last 10 attempts, oldest first for the chart
+  const canvas  = document.getElementById("score-chart");
+  const emptyEl = document.getElementById("chart-empty");
+  if (!history.length) { canvas.classList.add("hidden"); emptyEl.classList.remove("hidden"); return; }
+  canvas.classList.remove("hidden"); emptyEl.classList.add("hidden");
   const data = [...history].reverse().slice(-10);
-  const ctx  = canvas.getContext('2d');
-  const W = canvas.offsetWidth || 700;
-  const H = 220;
-  canvas.width  = W;
-  canvas.height = H;
+  const W = canvas.offsetWidth || 700, H = 220;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, W, H);
-
-  const PAD_L = 48, PAD_R = 20, PAD_T = 20, PAD_B = 50;
-  const chartW = W - PAD_L - PAD_R;
-  const chartH = H - PAD_T - PAD_B;
-  const maxScore = TOTAL_QUESTIONS;
-
-  // Grid lines
-  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
-  [0, 25, 50, 75, 100].forEach(pct => {
-    const y = PAD_T + chartH - (pct / 100) * chartH;
-    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(PAD_L + chartW, y); ctx.stroke();
-    ctx.fillStyle = '#94a3b8'; ctx.font = '11px Segoe UI, system-ui, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(pct + '%', PAD_L - 6, y + 4);
+  const PL=48,PR=20,PT=20,PB=50,CW=W-PL-PR,CH=H-PT-PB;
+  ctx.strokeStyle="#e2e8f0"; ctx.lineWidth=1;
+  [0,25,50,75,100].forEach(pct => {
+    const y=PT+CH-(pct/100)*CH;
+    ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(PL+CW,y); ctx.stroke();
+    ctx.fillStyle="#94a3b8"; ctx.font="11px Segoe UI,sans-serif"; ctx.textAlign="right";
+    ctx.fillText(pct+"%",PL-6,y+4);
   });
-
-  // Bars
-  const barW = Math.min(48, (chartW / data.length) * 0.6);
-  const gap  = chartW / data.length;
-
-  data.forEach((h, i) => {
-    const pct = h.correct / h.total;
-    const barH = pct * chartH;
-    const x = PAD_L + gap * i + gap / 2 - barW / 2;
-    const y = PAD_T + chartH - barH;
-
-    // Bar gradient
-    const grad = ctx.createLinearGradient(0, y, 0, y + barH);
-    const col  = pct >= 0.75 ? '#0EA5A0' : pct >= 0.50 ? '#2B6CB0' : '#EF4444';
-    grad.addColorStop(0, col);
-    grad.addColorStop(1, col + '99');
-    ctx.fillStyle = grad;
+  const bW=Math.min(48,(CW/data.length)*0.6), gap=CW/data.length;
+  data.forEach((h,i) => {
+    const pct=h.pct/100,barH=pct*CH,x=PL+gap*i+gap/2-bW/2,y=PT+CH-barH;
+    const col=pct>=0.75?"#0EA5A0":pct>=0.50?"#2B6CB0":"#EF4444";
+    const grad=ctx.createLinearGradient(0,y,0,y+barH);
+    grad.addColorStop(0,col); grad.addColorStop(1,col+"99");
+    ctx.fillStyle=grad;
     ctx.beginPath();
-    ctx.roundRect ? ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0])
-                  : ctx.rect(x, y, barW, barH);
+    if(ctx.roundRect) ctx.roundRect(x,y,bW,barH,[4,4,0,0]); else ctx.rect(x,y,bW,barH);
     ctx.fill();
-
-    // Score label on bar
-    ctx.fillStyle = '#1a2332'; ctx.font = 'bold 11px Segoe UI, system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(Math.round(pct * 100) + '%', x + barW / 2, y - 5);
-
-    // X-axis label (attempt number)
-    ctx.fillStyle = '#64748b'; ctx.font = '10px Segoe UI, system-ui, sans-serif';
-    ctx.fillText('Att ' + (i + 1), x + barW / 2, PAD_T + chartH + 16);
-    // Test name
-    const tn = TESTS.find(t => t.id === h.testId)?.badge || '';
-    ctx.fillText(tn, x + barW / 2, PAD_T + chartH + 30);
+    ctx.fillStyle="#1a2332"; ctx.font="bold 11px Segoe UI,sans-serif"; ctx.textAlign="center";
+    ctx.fillText(h.pct+"%",x+bW/2,y-5);
+    ctx.fillStyle="#64748b"; ctx.font="10px Segoe UI,sans-serif";
+    ctx.fillText("Att "+(i+1),x+bW/2,PT+CH+16);
+    const tn=TESTS.find(t=>t.id===h.testId)?.badge||"";
+    ctx.fillText(tn,x+bW/2,PT+CH+30);
   });
-
-  // Legend
-  [['#0EA5A0','≥ 75% (Good)'],['#2B6CB0','50–74% (Fair)'],['#EF4444','< 50% (Needs Work)']].forEach(([col, lbl], i) => {
-    const lx = PAD_L + i * 160;
-    const ly = H - 4;
-    ctx.fillStyle = col;
-    ctx.fillRect(lx, ly - 9, 12, 10);
-    ctx.fillStyle = '#64748b'; ctx.font = '10px Segoe UI, system-ui, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(lbl, lx + 16, ly);
+  [["#0EA5A0","≥ 75% Pass"],["#2B6CB0","50–74% Fair"],["#EF4444","< 50% Needs Work"]].forEach(([col,lbl],i)=>{
+    const lx=PL+i*160,ly=H-4;
+    ctx.fillStyle=col; ctx.fillRect(lx,ly-9,12,10);
+    ctx.fillStyle="#64748b"; ctx.font="10px Segoe UI,sans-serif"; ctx.textAlign="left";
+    ctx.fillText(lbl,lx+16,ly);
   });
 }
 
@@ -1237,275 +1507,209 @@ function renderChart(history) {
    TEST ENGINE
 ================================================================ */
 function startTest(testId) {
-  if (!currentUser) { showToast('Please log in first.', 'error'); return; }
-  showTest(testId);
+  activeTest    = TESTS.find(t => t.id === testId);
+  if (!activeTest) return;
+  userAnswers   = new Array(activeTest.questions.length).fill(null);
+  currentQIndex = 0;
+  timeElapsed   = 0;
+  showPage("page-test");
+  document.getElementById("test-title-bar").textContent = activeTest.name;
+  renderQPalette();
+  renderQuestion();
+  startTimer();
 }
 
 function renderQPalette() {
-  const wrap = document.getElementById('q-palette-wrap');
-  wrap.innerHTML = '';
+  const wrap = document.getElementById("q-palette-wrap");
+  wrap.innerHTML = "";
   activeTest.questions.forEach((_, i) => {
-    const dot = document.createElement('div');
-    dot.className = 'q-dot' + (i === currentQIndex ? ' current' : '') + (userAnswers[i] !== null ? ' answered' : '');
-    dot.textContent = i + 1;
-    dot.title = 'Question ' + (i + 1);
+    const dot = document.createElement("div");
+    dot.className = "q-dot" + (i===currentQIndex?" current":"") + (userAnswers[i]!==null?" answered":"");
+    dot.textContent = i+1; dot.title = "Question "+(i+1);
     dot.onclick = () => goToQuestion(i);
     wrap.appendChild(dot);
   });
 }
 
 function renderQuestion() {
-  const q    = activeTest.questions[currentQIndex];
+  const q     = activeTest.questions[currentQIndex];
   const total = activeTest.questions.length;
-
-  document.getElementById('q-meta').textContent      = `Question ${currentQIndex + 1} of ${TOTAL_QUESTIONS}`;
-  document.getElementById('test-progress-info').textContent = `Question ${currentQIndex + 1} of ${TOTAL_QUESTIONS}`;
-  document.getElementById('q-text').textContent      = q.question;
-
-  const optWrap = document.getElementById('q-options');
-  optWrap.innerHTML = '';
-  const keys = ['A','B','C','D','E'];
-  q.options.forEach((opt, oi) => {
-    const div = document.createElement('div');
-    div.className = 'q-option' + (userAnswers[currentQIndex] === oi ? ' selected' : '');
+  document.getElementById("q-meta").textContent           = `Question ${currentQIndex+1} of ${total}`;
+  document.getElementById("test-progress-info").textContent = `Question ${currentQIndex+1} of ${total}`;
+  document.getElementById("q-text").textContent           = q.question;
+  const optWrap = document.getElementById("q-options");
+  optWrap.innerHTML = "";
+  const keys = ["A","B","C","D","E"];
+  q.options.forEach((opt,oi) => {
+    const div = document.createElement("div");
+    div.className = "q-option"+(userAnswers[currentQIndex]===oi?" selected":"");
     div.innerHTML = `<div class="q-option-key">${keys[oi]}</div><div class="q-option-text">${opt}</div>`;
     div.onclick = () => selectAnswer(oi);
     optWrap.appendChild(div);
   });
-
-  document.getElementById('btn-prev').disabled = currentQIndex === 0;
-  document.getElementById('btn-next').textContent = currentQIndex === total - 1 ? 'Last Question' : 'Next →';
+  document.getElementById("btn-prev").disabled = currentQIndex===0;
+  document.getElementById("btn-next").textContent = currentQIndex===total-1?"Last Question":"Next →";
 }
 
 function selectAnswer(optIndex) {
   userAnswers[currentQIndex] = optIndex;
-  document.querySelectorAll('.q-option').forEach((el, i) => {
-    el.classList.toggle('selected', i === optIndex);
-  });
-  // Update palette dot
-  const dots = document.querySelectorAll('.q-dot');
-  if (dots[currentQIndex]) dots[currentQIndex].classList.add('answered');
+  document.querySelectorAll(".q-option").forEach((el,i) => el.classList.toggle("selected",i===optIndex));
+  const dots = document.querySelectorAll(".q-dot");
+  if(dots[currentQIndex]) dots[currentQIndex].classList.add("answered");
 }
 
 function navigateQ(dir) {
   const next = currentQIndex + dir;
-  if (next < 0 || next >= activeTest.questions.length) return;
+  if (next<0 || next>=activeTest.questions.length) return;
   goToQuestion(next);
 }
 
 function goToQuestion(idx) {
-  // Update palette
-  const dots = document.querySelectorAll('.q-dot');
-  if (dots[currentQIndex]) dots[currentQIndex].classList.remove('current');
+  const dots = document.querySelectorAll(".q-dot");
+  if(dots[currentQIndex]) dots[currentQIndex].classList.remove("current");
   currentQIndex = idx;
-  if (dots[currentQIndex]) dots[currentQIndex].classList.add('current');
+  if(dots[currentQIndex]) dots[currentQIndex].classList.add("current");
   renderQuestion();
-
-  // Scroll palette dot into view
-  const activeDot = document.querySelectorAll('.q-dot')[currentQIndex];
-  if (activeDot) activeDot.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  const activeDot = document.querySelectorAll(".q-dot")[currentQIndex];
+  if(activeDot) activeDot.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
 }
 
 /* ================================================================
    TIMER
 ================================================================ */
 function startTimer() {
-  const timerEl = document.getElementById('test-timer');
+  const timerEl = document.getElementById("test-timer");
   timerInterval = setInterval(() => {
     timeElapsed++;
     const remaining = timeLimit - timeElapsed;
-    if (remaining <= 0) {
+    if (remaining<=0) {
       clearInterval(timerInterval);
-      showToast('⏰ Time is up! Submitting your exam...', 'error');
-      setTimeout(() => submitExam(), 1500);
+      showToast("⏰ Time is up! Submitting your exam...", "error");
+      setTimeout(()=>submitExam(),1500);
       return;
     }
-    const h = Math.floor(remaining / 3600);
-    const m = Math.floor((remaining % 3600) / 60);
-    const s = remaining % 60;
-    timerEl.textContent = `⏱ ${pad(h)}:${pad(m)}:${pad(s)}`;
-    timerEl.className = 'hidden';
-    timerEl.classList.remove('hidden');
-    if      (remaining <= 300) timerEl.className = 'danger';
-    else if (remaining <= 900) timerEl.className = 'warning';
-    else                       timerEl.className = '';
-    timerEl.textContent = `⏱ ${pad(h)}:${pad(m)}:${pad(s)}`;
-  }, 1000);
+    const h=Math.floor(remaining/3600),m=Math.floor((remaining%3600)/60),s=remaining%60;
+    timerEl.textContent=`⏱ ${pad(h)}:${pad(m)}:${pad(s)}`;
+    if(remaining<=300) timerEl.className="danger";
+    else if(remaining<=900) timerEl.className="warning";
+    else timerEl.className="";
+  },1000);
 }
-
-function stopTimer() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-}
-
-function pad(n) { return String(n).padStart(2, '0'); }
+function stopTimer() { if(timerInterval){clearInterval(timerInterval);timerInterval=null;} }
+function pad(n) { return String(n).padStart(2,"0"); }
 
 /* ================================================================
-   SUBMIT EXAM
+   SUBMIT
 ================================================================ */
 function confirmSubmit() {
-  const answered   = userAnswers.filter(a => a !== null).length;
+  const answered   = userAnswers.filter(a=>a!==null).length;
   const unanswered = activeTest.questions.length - answered;
-  const bodyText   = unanswered > 0
-    ? `You have <strong>${unanswered} unattempted question${unanswered !== 1 ? 's' : ''}</strong>. Are you sure you want to submit?`
-    : 'All questions answered. Ready to submit?';
-  document.getElementById('modal-body-text').innerHTML = bodyText;
-  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById("modal-body-text").innerHTML = unanswered>0
+    ? `You have <strong>${unanswered} unattempted question${unanswered!==1?"s":""}</strong>. Are you sure you want to submit?`
+    : "All questions answered. Ready to submit?";
+  document.getElementById("modal-overlay").classList.remove("hidden");
 }
+document.getElementById("modal-cancel-btn").onclick  = () => document.getElementById("modal-overlay").classList.add("hidden");
+document.getElementById("modal-confirm-btn").onclick = () => { document.getElementById("modal-overlay").classList.add("hidden"); submitExam(); };
 
-document.getElementById('modal-cancel-btn').onclick = () => {
-  document.getElementById('modal-overlay').classList.add('hidden');
-};
-document.getElementById('modal-confirm-btn').onclick = () => {
-  document.getElementById('modal-overlay').classList.add('hidden');
-  submitExam();
-};
-
-function submitExam() {
+async function submitExam() {
   stopTimer();
-
-  let correct = 0, wrong = 0, skipped = 0;
-  activeTest.questions.forEach((q, i) => {
-    const ans = userAnswers[i];
-    if (ans === null) skipped++;
-    else if (ans === q.answer) correct++;
+  let correct=0,wrong=0,skipped=0;
+  activeTest.questions.forEach((q,i) => {
+    const ans=userAnswers[i];
+    if(ans===null) skipped++;
+    else if(ans===q.answer) correct++;
     else wrong++;
   });
-
-  const total      = activeTest.questions.length;
-  const displayTotal = TOTAL_QUESTIONS;
-  const pct        = Math.round((correct / displayTotal) * 100);
-  const timeTakenS = timeElapsed;
-  const th = Math.floor(timeTakenS / 3600);
-  const tm = Math.floor((timeTakenS % 3600) / 60);
-  const ts = timeTakenS % 60;
-  const timeTakenStr = th > 0
-    ? `${pad(th)}h ${pad(tm)}m ${pad(ts)}s`
-    : `${pad(tm)}m ${pad(ts)}s`;
-
-  // Save attempt
-  const attempt = {
-    testId:    activeTest.id,
-    date:      new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }),
-    correct,
-    wrong,
-    skipped:   skipped + (displayTotal - total), // account for unfilled questions beyond sample
-    total:     displayTotal,
-    timeTaken: timeTakenStr,
-    pct
+  const total=activeTest.questions.length;
+  const pct=Math.round((correct/total)*100);
+  const th=Math.floor(timeElapsed/3600),tm=Math.floor((timeElapsed%3600)/60),ts=timeElapsed%60;
+  const timeTakenStr=th>0?`${pad(th)}h ${pad(tm)}m ${pad(ts)}s`:`${pad(tm)}m ${pad(ts)}s`;
+  const attempt={
+    testId:activeTest.id,
+    date:new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),
+    correct,wrong,skipped,total,pct,timeTaken:timeTakenStr
   };
-  addAttempt(currentUser.email, attempt);
-
-  // Show results
-  showResults({ correct, wrong, skipped: attempt.skipped, total: displayTotal, pct, timeTakenStr });
+  lastSavedAttempt = attempt;
+  await saveAttemptToFirestore(attempt);
+  showResults({correct,wrong,skipped,total,pct,timeTakenStr});
 }
 
-function showResults({ correct, wrong, skipped, total, pct, timeTakenStr }) {
-  // Set verdict
-  let icon, verdict;
-  if (pct >= 80)      { icon = '🏆'; verdict = 'Outstanding Performance!'; }
-  else if (pct >= 65) { icon = '🎉'; verdict = 'Great Job!'; }
-  else if (pct >= 50) { icon = '👍'; verdict = 'Good Effort!'; }
-  else                { icon = '💪'; verdict = 'Keep Practicing!'; }
+function showResults({correct,wrong,skipped,total,pct,timeTakenStr}) {
+  let icon,verdict;
+  if(pct>=80){icon="🏆";verdict="Outstanding Performance!";}
+  else if(pct>=65){icon="🎉";verdict="Great Job!";}
+  else if(pct>=50){icon="👍";verdict="Good Effort!";}
+  else{icon="💪";verdict="Keep Practicing!";}
+  document.getElementById("res-icon").textContent    = icon;
+  document.getElementById("res-verdict").textContent = verdict;
+  document.getElementById("res-score-big").innerHTML = `${correct} <span>/ ${total}</span>`;
+  document.getElementById("res-pct").textContent     = `${pct}% Correct`;
+  document.getElementById("res-time").textContent    = `Time Taken: ${timeTakenStr}`;
+  document.getElementById("res-correct").textContent = correct;
+  document.getElementById("res-wrong").textContent   = wrong;
+  document.getElementById("res-skip").textContent    = skipped;
 
-  document.getElementById('res-icon').textContent          = icon;
-  document.getElementById('res-verdict').textContent       = verdict;
-  document.getElementById('res-score-big').innerHTML       = `${correct} <span>/ ${total}</span>`;
-  document.getElementById('res-pct').textContent           = `${pct}% Correct`;
-  document.getElementById('res-time').textContent          = `Time Taken: ${timeTakenStr}`;
-  document.getElementById('res-correct').textContent       = correct;
-  document.getElementById('res-wrong').textContent         = wrong;
-  document.getElementById('res-skip').textContent          = skipped;
-
-  // Question-wise review
-  const reviewList = document.getElementById('review-list');
-  reviewList.innerHTML = '';
-  const keys = ['A','B','C','D','E'];
-  activeTest.questions.forEach((q, i) => {
-    const userAns = userAnswers[i];
-    const isCorrect = userAns === q.answer;
-    const isSkipped = userAns === null;
-    const statusCls = isSkipped ? 'skipped' : isCorrect ? 'correct' : 'wrong';
-    const statusLabel = isSkipped ? 'Not Attempted' : isCorrect ? 'Correct' : 'Incorrect';
-
-    const userAnsText = isSkipped ? '—' : `(${keys[userAns]}) ${q.options[userAns]}`;
-    const correctAnsText = `(${keys[q.answer]}) ${q.options[q.answer]}`;
-
-    const div = document.createElement('div');
-    div.className = 'review-item';
-    div.innerHTML = `
+  const reviewList = document.getElementById("review-list");
+  reviewList.innerHTML = "";
+  const keys=["A","B","C","D","E"];
+  activeTest.questions.forEach((q,i) => {
+    const userAns=userAnswers[i];
+    const isCorrect=userAns===q.answer, isSkipped=userAns===null;
+    const statusCls=isSkipped?"skipped":isCorrect?"correct":"wrong";
+    const statusLabel=isSkipped?"Not Attempted":isCorrect?"Correct":"Incorrect";
+    const div=document.createElement("div");
+    div.className="review-item";
+    div.innerHTML=`
       <div class="review-item-header">
-        <span class="review-q-num">Question ${i + 1}</span>
+        <span class="review-q-num">Question ${i+1}</span>
         <span class="review-badge ${statusCls}">${statusLabel}</span>
       </div>
       <div class="review-q-text">${q.question}</div>
       <div class="review-answers">
-        ${!isSkipped ? `<div class="review-answer-row">
-          <span class="label ${isCorrect ? 'correct-lbl' : 'wrong-lbl'}">Your Answer:</span>
-          <span class="val ${isCorrect ? 'correct-val' : ''}">${userAnsText}</span>
-        </div>` : ''}
-        ${!isCorrect ? `<div class="review-answer-row">
-          <span class="label correct-lbl">Correct Answer:</span>
-          <span class="val correct-val">${correctAnsText}</span>
-        </div>` : ''}
+        ${!isSkipped?`<div class="review-answer-row"><span class="label ${isCorrect?"correct-lbl":"wrong-lbl"}">Your Answer:</span><span class="val ${isCorrect?"correct-val":""}">(${keys[userAns]}) ${q.options[userAns]}</span></div>`:""}
+        ${!isCorrect?`<div class="review-answer-row"><span class="label correct-lbl">Correct Answer:</span><span class="val correct-val">(${keys[q.answer]}) ${q.options[q.answer]}</span></div>`:""}
       </div>`;
     reviewList.appendChild(div);
   });
-
-  showPage('page-results');
+  showPage("page-results");
 }
 
 /* ================================================================
-   AUTH TAB SWITCHER
+   AUTH UI HELPERS
 ================================================================ */
 function switchTab(tab) {
-  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
-  document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
-  document.getElementById('login-error').textContent = '';
-  document.getElementById('reg-error').textContent = '';
+  document.getElementById("tab-login").classList.toggle("active", tab==="login");
+  document.getElementById("tab-register").classList.toggle("active", tab==="register");
+  document.getElementById("form-login").classList.toggle("hidden", tab!=="login");
+  document.getElementById("form-register").classList.toggle("hidden", tab!=="register");
+  document.getElementById("login-error").textContent="";
+  document.getElementById("reg-error").textContent="";
 }
-
 function scrollToAuth(tab) {
   switchTab(tab);
-  document.getElementById('auth-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById("auth-card").scrollIntoView({behavior:"smooth",block:"center"});
 }
 
 /* ================================================================
    TOAST
 ================================================================ */
-function showToast(msg, type = '') {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.className = 'toast ' + type;
-  toast.textContent = msg;
+function showToast(msg, type="") {
+  const container=document.getElementById("toast-container");
+  const toast=document.createElement("div");
+  toast.className="toast "+type; toast.textContent=msg;
   container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3500);
+  setTimeout(()=>toast.remove(),3500);
 }
 
 /* ================================================================
-   INIT
+   RESIZE HANDLER
 ================================================================ */
-function init() {
-  const session = getSession();
-  if (session) {
-    currentUser = session;
-    showDashboard();
-  } else {
-    showLanding();
-  }
-}
-
-// Re-render chart on resize
-window.addEventListener('resize', () => {
-  const visible = !document.getElementById('page-dashboard').classList.contains('hidden');
-  if (visible && currentUser) {
-    const history = getUserHistory(currentUser.email);
-    renderChart(history);
+window.addEventListener("resize",()=>{
+  if(!document.getElementById("page-dashboard").classList.contains("hidden")&&currentUser) {
+    loadUserHistory().then(h=>renderChart(h));
   }
 });
-
-init();
 </script>
 </body>
 </html>

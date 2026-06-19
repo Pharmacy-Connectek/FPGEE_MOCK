@@ -243,14 +243,7 @@
   ============================================================ */
   #page-dashboard { display: flex; flex-direction: column; min-height: 100vh; }
 
-  #dash-header {
-    background: var(--navy);
-    height: 68px;
-    padding: 0 5vw;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 2px 16px rgba(13,33,73,0.22);
-  }
+  /* #dash-header now uses .app-header class */
   .dash-user-info { display: flex; align-items: center; gap: 14px; }
   .user-avatar {
     width: 38px; height: 38px; border-radius: 50%;
@@ -341,13 +334,7 @@
     background: var(--bg);
     display: flex; flex-direction: column;
   }
-  #test-topbar {
-    background: var(--navy);
-    height: 64px;
-    padding: 0 5vw;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-  }
+  /* #test-topbar now uses .app-header class */
   .test-topbar-left { display: flex; align-items: center; gap: 16px; }
   .test-title-bar { font-size: 0.95rem; font-weight: 700; color: #fff; }
   .test-progress-info { font-size: 0.82rem; color: rgba(255,255,255,0.65); font-weight: 500; }
@@ -423,10 +410,7 @@
     min-height: 100vh; background: var(--bg);
     display: flex; flex-direction: column;
   }
-  #results-topbar {
-    background: var(--navy); height: 64px;
-    padding: 0 5vw; display: flex; align-items: center; justify-content: space-between;
-  }
+  /* #results-topbar now uses .app-header class */
   #results-body { flex: 1; padding: 40px 5vw 60px; max-width: 820px; margin: 0 auto; width: 100%; }
 
   .results-hero {
@@ -538,8 +522,7 @@
     .results-hero { padding: 26px 18px; }
     #results-body { padding: 24px 4vw 40px; }
     #test-body { padding: 20px 4vw 20px; }
-    .test-topbar-left { flex-direction: column; align-items: flex-start; gap: 2px; }
-    #test-topbar { height: auto; padding: 12px 5vw; flex-wrap: wrap; gap: 10px; }
+    /* test-topbar responsive handled inline */
     #dash-main { padding: 24px 4vw 40px; }
   }
 
@@ -559,30 +542,7 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .loader-text { color: rgba(255,255,255,0.6); font-size: 0.85rem; }
 
-  /* ============================================================
-     GLOBAL NAVIGATION BAR (shown on all post-login pages)
-  ============================================================ */
-  #global-nav {
-    background: #0a1a38;
-    padding: 0 5vw;
-    display: flex; align-items: center; gap: 0;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    overflow-x: auto; flex-shrink: 0;
-    scrollbar-width: none;
-  }
-  #global-nav::-webkit-scrollbar { display: none; }
-  .nav-item {
-    display: flex; align-items: center; gap: 7px;
-    padding: 0 18px; height: 46px;
-    font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.55);
-    cursor: pointer; border: none; background: none;
-    border-bottom: 3px solid transparent;
-    transition: color var(--transition), border-color var(--transition);
-    white-space: nowrap; text-decoration: none;
-  }
-  .nav-item:hover { color: rgba(255,255,255,0.9); }
-  .nav-item.active { color: var(--teal); border-bottom-color: var(--teal); }
-  .nav-item .nav-ico { font-size: 1rem; }
+  /* nav replaced by dropdown in header */
 
   /* ============================================================
      NOTES / STUDY MATERIALS PAGE
@@ -708,7 +668,98 @@
   @media (max-width: 680px) {
     #notes-main { padding: 20px 4vw 40px; }
     .notes-grid { grid-template-columns: 1fr; }
-    .nav-item { padding: 0 12px; font-size: 0.78rem; }
+    /* .nav-item removed (replaced by dropdown) */
+  }
+
+  /* ============================================================
+     HEADER DROPDOWN NAVIGATION
+  ============================================================ */
+  .hdr-nav { display: flex; align-items: center; gap: 6px; }
+
+  /* Home button */
+  .hdr-home-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: var(--radius-sm);
+    font-size: 0.82rem; font-weight: 700; color: #fff;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    cursor: pointer; transition: background var(--transition);
+    white-space: nowrap;
+  }
+  .hdr-home-btn:hover { background: rgba(255,255,255,0.18); }
+
+  /* Dropdown wrapper */
+  .hdr-dropdown { position: relative; }
+  .hdr-dropdown-btn {
+    display: flex; align-items: center; gap: 7px;
+    padding: 8px 14px; border-radius: var(--radius-sm);
+    font-size: 0.82rem; font-weight: 700; color: #fff;
+    background: var(--teal); border: none;
+    cursor: pointer; transition: background var(--transition);
+    white-space: nowrap;
+  }
+  .hdr-dropdown-btn:hover { background: var(--teal-lt); }
+  .hdr-dropdown-btn .chevron {
+    font-size: 0.65rem; transition: transform var(--transition);
+    display: inline-block;
+  }
+  .hdr-dropdown.open .hdr-dropdown-btn .chevron { transform: rotate(180deg); }
+
+  /* Dropdown menu panel */
+  .hdr-dropdown-menu {
+    display: none;
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: var(--navy); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius); min-width: 240px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    z-index: 500; overflow: hidden;
+    animation: dropIn 0.18s ease;
+  }
+  @keyframes dropIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+  .hdr-dropdown.open .hdr-dropdown-menu { display: block; }
+
+  /* Section dividers inside menu */
+  .dd-section-label {
+    padding: 10px 16px 4px;
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 1.5px;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+  }
+  .dd-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0; }
+
+  /* Individual menu items */
+  .dd-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; width: 100%; border: none;
+    background: transparent; color: rgba(255,255,255,0.8);
+    font-size: 0.86rem; font-weight: 500; cursor: pointer;
+    text-align: left; transition: background var(--transition), color var(--transition);
+  }
+  .dd-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .dd-item.active { background: rgba(14,165,160,0.15); color: var(--teal); }
+  .dd-item .dd-ico { font-size: 1.1rem; width: 22px; text-align: center; flex-shrink: 0; }
+  .dd-item .dd-label { flex: 1; }
+  .dd-item .dd-badge {
+    font-size: 0.65rem; font-weight: 800; background: var(--teal);
+    color: #fff; padding: 2px 6px; border-radius: 4px;
+  }
+
+  /* Right side of header */
+  .hdr-right { display: flex; align-items: center; gap: 8px; }
+
+  /* Shared header style */
+  .app-header {
+    background: var(--navy);
+    height: 68px; padding: 0 5vw;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 200;
+    box-shadow: 0 2px 16px rgba(13,33,73,0.25);
+    flex-shrink: 0;
+  }
+  .hdr-left { display: flex; align-items: center; gap: 16px; }
+
+  @media (max-width: 600px) {
+    .hdr-home-btn .hdr-home-label { display: none; }
+    .hdr-dropdown-btn .hdr-nav-label { display: none; }
+    .app-header { padding: 0 4vw; }
   }
 </style>
 </head>
@@ -833,26 +884,37 @@
      PAGE: DASHBOARD
 ================================================================ -->
 <div id="page-dashboard" class="hidden">
-  <header id="dash-header">
-    <div class="logo-text">Connectek <span>RX</span></div>
-    <div class="dash-user-info">
-      <div class="user-avatar" id="dash-avatar">J</div>
-      <div>
-        <div class="user-greeting"><strong id="dash-username">Jane</strong></div>
-        <div class="user-greeting">FPGEE Candidate</div>
+  <header class="app-header">
+    <div class="hdr-left">
+      <div class="logo-text">Connectek <span>RX</span></div>
+      <button class="hdr-home-btn" onclick="navTo('dashboard')">🏠 <span class="hdr-home-label">Dashboard</span></button>
+    </div>
+    <div class="hdr-right">
+      <div class="user-avatar" id="dash-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:700;color:#fff;flex-shrink:0;">J</div>
+      <span style="color:rgba(255,255,255,0.8);font-size:0.85rem;font-weight:600;" id="dash-username">Jane</span>
+      <div class="hdr-dropdown" id="hdr-dropdown">
+        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">
+          <span>📚</span>
+          <span class="hdr-nav-label">Study Menu</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="hdr-dropdown-menu" id="hdr-menu">
+          <div class="dd-section-label">Navigation</div>
+          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')"><span class="dd-ico">🏠</span><span class="dd-label">Dashboard</span></button>
+          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')"><span class="dd-ico">📝</span><span class="dd-label">Take a Test</span><span class="dd-badge">200 Q</span></button>
+          <div class="dd-divider"></div>
+          <div class="dd-section-label">Study Notes</div>
+          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')"><span class="dd-ico">💊</span><span class="dd-label">Pharmacology</span></button>
+          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')"><span class="dd-ico">🧪</span><span class="dd-label">Pharmaceutics</span></button>
+          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')"><span class="dd-ico">⚖️</span><span class="dd-label">Pharmacy Law</span></button>
+          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')"><span class="dd-ico">🏥</span><span class="dd-label">Clinical Pharmacokinetics</span></button>
+          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')"><span class="dd-ico">🧠</span><span class="dd-label">Mnemonics</span></button>
+          <div class="dd-divider"></div>
+          <button class="dd-item" onclick="closeDropdown();logout()" style="color:rgba(255,100,100,0.8);"><span class="dd-ico">🚪</span><span class="dd-label">Logout</span></button>
+        </div>
       </div>
-      <button class="btn btn-outline" style="margin-left:12px;border-color:rgba(255,255,255,0.3);color:#fff;padding:8px 16px;" onclick="logout()">Logout</button>
     </div>
   </header>
-  <nav id="global-nav">
-    <button class="nav-item active" id="nav-dashboard" onclick="navTo('dashboard')"><span class="nav-ico">🏠</span> Dashboard</button>
-    <button class="nav-item" id="nav-pharmacology" onclick="navTo('pharmacology')"><span class="nav-ico">💊</span> Pharmacology</button>
-    <button class="nav-item" id="nav-pharmaceutics" onclick="navTo('pharmaceutics')"><span class="nav-ico">🧪</span> Pharmaceutics</button>
-    <button class="nav-item" id="nav-pharmalaw" onclick="navTo('pharmalaw')"><span class="nav-ico">⚖️</span> Pharmacy Law</button>
-    <button class="nav-item" id="nav-clinical" onclick="navTo('clinical')"><span class="nav-ico">🏥</span> Clinical PK</button>
-    <button class="nav-item" id="nav-mnemonics" onclick="navTo('mnemonics')"><span class="nav-ico">🧠</span> Mnemonics</button>
-    <button class="nav-item" id="nav-tests" onclick="navTo('tests')"><span class="nav-ico">📝</span> Tests</button>
-  </nav>
   <main id="dash-main">
     <div style="margin-bottom:44px;">
       <h2 class="dash-section-title">📚 Available Test Series</h2>
@@ -877,23 +939,37 @@
      PAGE: NOTES / STUDY MATERIALS
 ================================================================ -->
 <div id="page-notes" class="hidden">
-  <header id="dash-header" style="background:var(--navy);height:68px;padding:0 5vw;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(13,33,73,0.22);">
-    <div class="logo-text">Connectek <span>RX</span></div>
-    <div class="dash-user-info">
-      <div class="user-avatar" id="notes-avatar">J</div>
-      <div><div class="user-greeting"><strong id="notes-username">Jane</strong></div><div class="user-greeting">FPGEE Candidate</div></div>
-      <button class="btn btn-outline" style="margin-left:12px;border-color:rgba(255,255,255,0.3);color:#fff;padding:8px 16px;" onclick="logout()">Logout</button>
+  <header class="app-header">
+    <div class="hdr-left">
+      <div class="logo-text">Connectek <span>RX</span></div>
+      <button class="hdr-home-btn" onclick="navTo('dashboard')">🏠 <span class="hdr-home-label">Dashboard</span></button>
+    </div>
+    <div class="hdr-right">
+      <div class="user-avatar" id="notes-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:700;color:#fff;flex-shrink:0;">J</div>
+      <span style="color:rgba(255,255,255,0.8);font-size:0.85rem;font-weight:600;" id="notes-username">Jane</span>
+      <div class="hdr-dropdown" id="hdr-dropdown">
+        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">
+          <span>📚</span>
+          <span class="hdr-nav-label">Study Menu</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="hdr-dropdown-menu" id="hdr-menu">
+          <div class="dd-section-label">Navigation</div>
+          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')"><span class="dd-ico">🏠</span><span class="dd-label">Dashboard</span></button>
+          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')"><span class="dd-ico">📝</span><span class="dd-label">Take a Test</span><span class="dd-badge">200 Q</span></button>
+          <div class="dd-divider"></div>
+          <div class="dd-section-label">Study Notes</div>
+          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')"><span class="dd-ico">💊</span><span class="dd-label">Pharmacology</span></button>
+          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')"><span class="dd-ico">🧪</span><span class="dd-label">Pharmaceutics</span></button>
+          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')"><span class="dd-ico">⚖️</span><span class="dd-label">Pharmacy Law</span></button>
+          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')"><span class="dd-ico">🏥</span><span class="dd-label">Clinical Pharmacokinetics</span></button>
+          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')"><span class="dd-ico">🧠</span><span class="dd-label">Mnemonics</span></button>
+          <div class="dd-divider"></div>
+          <button class="dd-item" onclick="closeDropdown();logout()" style="color:rgba(255,100,100,0.8);"><span class="dd-ico">🚪</span><span class="dd-label">Logout</span></button>
+        </div>
+      </div>
     </div>
   </header>
-  <nav id="global-nav-notes" style="background:#0a1a38;padding:0 5vw;display:flex;align-items:center;gap:0;border-bottom:1px solid rgba(255,255,255,0.07);overflow-x:auto;scrollbar-width:none;">
-    <button class="nav-item" onclick="navTo('dashboard')"><span class="nav-ico">🏠</span> Dashboard</button>
-    <button class="nav-item active" onclick="navTo('pharmacology')"><span class="nav-ico">💊</span> Pharmacology</button>
-    <button class="nav-item" onclick="navTo('pharmaceutics')"><span class="nav-ico">🧪</span> Pharmaceutics</button>
-    <button class="nav-item" onclick="navTo('pharmalaw')"><span class="nav-ico">⚖️</span> Pharmacy Law</button>
-    <button class="nav-item" onclick="navTo('clinical')"><span class="nav-ico">🏥</span> Clinical PK</button>
-    <button class="nav-item" onclick="navTo('mnemonics')"><span class="nav-ico">🧠</span> Mnemonics</button>
-    <button class="nav-item" onclick="navTo('tests')"><span class="nav-ico">📝</span> Tests</button>
-  </nav>
 
   <main id="notes-main">
     <!-- Topic tabs -->
@@ -1540,8 +1616,8 @@
      PAGE: ACTIVE TEST
 ================================================================ -->
 <div id="page-test" class="hidden">
-  <div id="test-topbar">
-    <div class="test-topbar-left">
+  <div id="test-topbar" class="app-header" style="height:auto;min-height:68px;padding:12px 5vw;">
+    <div class="hdr-left" style="flex-direction:column;align-items:flex-start;gap:2px;">
       <div class="test-title-bar" id="test-title-bar">FPGEE Test Series 1</div>
       <div class="test-progress-info" id="test-progress-info">Question 1 of 200</div>
     </div>
@@ -1568,9 +1644,34 @@
      PAGE: RESULTS
 ================================================================ -->
 <div id="page-results" class="hidden">
-  <div id="results-topbar">
-    <div class="logo-text">Connectek <span>RX</span> — <span style="color:rgba(255,255,255,0.7);font-weight:500;font-size:0.95rem;">Exam Results</span></div>
-    <button class="btn btn-outline" onclick="returnToDashboard()" style="border-color:rgba(255,255,255,0.3);color:#fff;padding:8px 16px;font-size:0.82rem;">🏠 Dashboard</button>
+  <div id="results-topbar" class="app-header">
+    <div class="hdr-left">
+      <div class="logo-text">Connectek <span>RX</span></div>
+      <button class="hdr-home-btn" onclick="returnToDashboard()">🏠 <span class="hdr-home-label">Dashboard</span></button>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-dropdown" id="hdr-dropdown">
+        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">
+          <span>📚</span>
+          <span class="hdr-nav-label">Study Menu</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="hdr-dropdown-menu" id="hdr-menu">
+          <div class="dd-section-label">Navigation</div>
+          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')"><span class="dd-ico">🏠</span><span class="dd-label">Dashboard</span></button>
+          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')"><span class="dd-ico">📝</span><span class="dd-label">Take a Test</span><span class="dd-badge">200 Q</span></button>
+          <div class="dd-divider"></div>
+          <div class="dd-section-label">Study Notes</div>
+          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')"><span class="dd-ico">💊</span><span class="dd-label">Pharmacology</span></button>
+          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')"><span class="dd-ico">🧪</span><span class="dd-label">Pharmaceutics</span></button>
+          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')"><span class="dd-ico">⚖️</span><span class="dd-label">Pharmacy Law</span></button>
+          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')"><span class="dd-ico">🏥</span><span class="dd-label">Clinical Pharmacokinetics</span></button>
+          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')"><span class="dd-ico">🧠</span><span class="dd-label">Mnemonics</span></button>
+          <div class="dd-divider"></div>
+          <button class="dd-item" onclick="closeDropdown();logout()" style="color:rgba(255,100,100,0.8);"><span class="dd-ico">🚪</span><span class="dd-label">Logout</span></button>
+        </div>
+      </div>
+    </div>
   </div>
   <div id="results-body">
     <div class="results-hero">
@@ -2224,7 +2325,7 @@ function showPage(id) {
   window.scrollTo(0, 0);
 }
 function showLanding()   { showPage("page-landing"); }
-function showDashboard() { showPage("page-dashboard"); renderDashboard(); updateNavHighlight("nav-dashboard"); }
+function showDashboard() { showPage("page-dashboard"); renderDashboard(); setDropdownActive("dashboard"); }
 function returnToDashboard() { stopTimer(); showDashboard(); }
 
 /* ================================================================
@@ -2547,6 +2648,44 @@ window.addEventListener("resize",()=>{
 });
 
 /* ================================================================
+   DROPDOWN MENU — toggle / close / highlight active item
+================================================================ */
+function toggleDropdown(btn) {
+  // Find the parent .hdr-dropdown of the clicked button
+  const dd = (btn || event.currentTarget).closest(".hdr-dropdown");
+  if (!dd) return;
+  const wasOpen = dd.classList.contains("open");
+  // Close all dropdowns first
+  document.querySelectorAll(".hdr-dropdown").forEach(d => d.classList.remove("open"));
+  // Toggle this one
+  if (!wasOpen) dd.classList.add("open");
+}
+
+function closeDropdown() {
+  document.querySelectorAll(".hdr-dropdown").forEach(d => d.classList.remove("open"));
+}
+
+// Close dropdown when clicking anywhere outside
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".hdr-dropdown")) closeDropdown();
+});
+
+// Close on Escape key
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeDropdown();
+});
+
+// Highlight the active item in the dropdown
+function setDropdownActive(key) {
+  document.querySelectorAll(".dd-item").forEach(el => el.classList.remove("active"));
+  // Use querySelectorAll since same dd- ids exist on multiple pages (only one visible)
+  document.querySelectorAll("[id='dd-" + key + "']").forEach(el => el.classList.add("active"));
+  if (key === "tests") {
+    document.querySelectorAll("[id='dd-tests']").forEach(el => el.classList.add("active"));
+  }
+}
+
+/* ================================================================
    NAVIGATION — navTo() routes between dashboard and study pages
 ================================================================ */
 const NOTE_PAGES = {
@@ -2572,16 +2711,14 @@ function navTo(key) {
   if (!cfg) return;
 
   if (cfg.pageId === 'page-dashboard') {
-    // Dashboard or Tests tab
     showDashboard();
-    // Scroll to tests section if "tests"
+    setDropdownActive(key);
     if (key === 'tests') {
       setTimeout(() => {
         const el = document.getElementById('test-cards-grid');
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }
-    updateNavHighlight(key === 'tests' ? 'nav-tests' : 'nav-dashboard');
     return;
   }
 
@@ -2596,9 +2733,11 @@ function navTo(key) {
   // Update notes avatar/name
   if (userProfile) {
     const name = userProfile.name.split(' ')[0];
-    const av = document.getElementById('notes-avatar');
+    ['notes-avatar','notes-username2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = id.includes('avatar') ? name.charAt(0).toUpperCase() : name;
+    });
     const un = document.getElementById('notes-username');
-    if (av) av.textContent = name.charAt(0).toUpperCase();
     if (un) un.textContent = name;
   }
 
@@ -2606,6 +2745,7 @@ function navTo(key) {
   document.querySelectorAll('.note-panel').forEach(p => p.classList.remove('active'));
   const panel = document.getElementById(cfg.panelId);
   if (panel) panel.classList.add('active');
+  setDropdownActive(key);
 
   // Update page title
   const titleEl = document.getElementById('notes-page-title');
@@ -2629,20 +2769,8 @@ function navTo(key) {
 }
 
 function updateNavHighlight(activeNavId) {
-  // Dashboard nav
-  document.querySelectorAll('#global-nav .nav-item').forEach(el => {
-    el.classList.toggle('active', el.id === activeNavId);
-  });
-  // Notes page nav  
-  document.querySelectorAll('#global-nav-notes .nav-item').forEach(el => {
-    // Match by onclick content
-    const onclick = el.getAttribute('onclick') || '';
-    const key = onclick.match(/navTo\('(\w+)'\)/)?.[1];
-    if (key) {
-      const cfg = NOTE_PAGES[key];
-      el.classList.toggle('active', cfg && cfg.navId === activeNavId);
-    }
-  });
+  // Legacy function — now handled by setDropdownActive
+  // Keep for showDashboard() call compatibility
 }
 
 /* ================================================================
@@ -2660,6 +2788,8 @@ window.navigateQ         = navigateQ;
 window.confirmSubmit     = confirmSubmit;
 window.returnToDashboard = returnToDashboard;
 window.navTo             = navTo;
+window.toggleDropdown    = toggleDropdown;
+window.closeDropdown     = closeDropdown;
 </script>
 </body>
 </html>

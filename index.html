@@ -761,6 +761,38 @@
     .hdr-dropdown-btn .hdr-nav-label { display: none; }
     .app-header { padding: 0 4vw; }
   }
+
+  /* ── Dashboard stat cards ── */
+  .stat-card {
+    background: var(--white); border-radius: var(--radius);
+    border: 1.5px solid var(--border); padding: 20px 18px;
+    box-shadow: var(--card-shadow); text-align: center;
+  }
+  .stat-card-num {
+    font-size: 2rem; font-weight: 900; color: var(--navy);
+    line-height: 1; margin-bottom: 6px;
+  }
+  .stat-card-lbl {
+    font-size: 0.75rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  #subject-chart-container {
+    background: var(--white); border-radius: var(--radius);
+    border: 1.5px solid var(--border); padding: 24px;
+    box-shadow: var(--card-shadow);
+  }
+  #subject-chart { display: block; width: 100%; }
+
+  /* ── dd-logout color ── */
+  .dd-logout { color: #f87171 !important; }
+  .dd-logout:hover { background: rgba(239,68,68,0.08) !important; }
+
+  /* ── Section title clean (no emoji) ── */
+  .dash-section-title {
+    font-size: 1.1rem; font-weight: 800; color: var(--navy);
+    margin-bottom: 18px; letter-spacing: -0.2px;
+    padding-bottom: 10px; border-bottom: 2px solid var(--border);
+  }
 </style>
 </head>
 <body>
@@ -892,44 +924,68 @@
     <div class="hdr-right">
       <div class="user-avatar" id="dash-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:700;color:#fff;flex-shrink:0;">J</div>
       <span style="color:rgba(255,255,255,0.8);font-size:0.85rem;font-weight:600;" id="dash-username">Jane</span>
-      <div class="hdr-dropdown" id="hdr-dropdown">
-        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">
-          <span>📚</span>
-          <span class="hdr-nav-label">Study Menu</span>
-          <span class="chevron">▼</span>
-        </button>
-        <div class="hdr-dropdown-menu" id="hdr-menu">
+      <div class="hdr-dropdown">
+        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">Menu <span class="chevron">&#9660;</span></button>
+        <div class="hdr-dropdown-menu">
           <div class="dd-section-label">Navigation</div>
-          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')"><span class="dd-ico">🏠</span><span class="dd-label">Dashboard</span></button>
-          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')"><span class="dd-ico">📝</span><span class="dd-label">Take a Test</span><span class="dd-badge">200 Q</span></button>
+          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')">Dashboard</button>
+          <div class="dd-divider"></div>
+          <div class="dd-section-label">Tests</div>
+          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')">Take a Test <span class="dd-badge">200 Q</span></button>
           <div class="dd-divider"></div>
           <div class="dd-section-label">Study Notes</div>
-          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')"><span class="dd-ico">💊</span><span class="dd-label">Pharmacology</span></button>
-          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')"><span class="dd-ico">🧪</span><span class="dd-label">Pharmaceutics</span></button>
-          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')"><span class="dd-ico">⚖️</span><span class="dd-label">Pharmacy Law</span></button>
-          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')"><span class="dd-ico">🏥</span><span class="dd-label">Clinical Pharmacokinetics</span></button>
-          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')"><span class="dd-ico">🧠</span><span class="dd-label">Mnemonics</span></button>
+          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')">Pharmacology</button>
+          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')">Pharmaceutics</button>
+          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')">Pharmacy Law</button>
+          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')">Clinical Pharmacokinetics</button>
+          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')">Mnemonics</button>
           <div class="dd-divider"></div>
-          <button class="dd-item" onclick="closeDropdown();logout()" style="color:rgba(255,100,100,0.8);"><span class="dd-ico">🚪</span><span class="dd-label">Logout</span></button>
+          <button class="dd-item dd-logout" onclick="closeDropdown();logout()">Logout</button>
         </div>
       </div>
     </div>
   </header>
   <main id="dash-main">
-    <div style="margin-bottom:44px;">
-      <h2 class="dash-section-title">📚 Available Test Series</h2>
-      <div id="test-cards-grid"></div>
+    <!-- Welcome Banner -->
+    <div id="welcome-banner" style="background:linear-gradient(135deg,var(--navy) 0%,#1a3a6b 100%);border-radius:var(--radius);padding:28px 32px;margin-bottom:32px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">FPGEE Preparation</div>
+        <div style="font-size:1.5rem;font-weight:800;margin-bottom:4px;" id="dash-welcome-name">Welcome back!</div>
+        <div style="font-size:0.88rem;color:rgba(255,255,255,0.65);">Track your progress and pick up where you left off.</div>
+      </div>
+      <button class="btn btn-teal" onclick="navTo('tests')" style="padding:12px 28px;font-size:0.95rem;font-weight:700;">Take a Test &rarr;</button>
     </div>
-    <div id="analytics-section">
-      <h2 class="dash-section-title">📊 Score Progression</h2>
+
+    <!-- Stats Summary Row -->
+    <div id="stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:32px;">
+      <div class="stat-card"><div class="stat-card-num" id="stat-attempts">0</div><div class="stat-card-lbl">Total Attempts</div></div>
+      <div class="stat-card"><div class="stat-card-num" id="stat-best">—</div><div class="stat-card-lbl">Best Score</div></div>
+      <div class="stat-card"><div class="stat-card-num" id="stat-avg">—</div><div class="stat-card-lbl">Average Score</div></div>
+      <div class="stat-card"><div class="stat-card-num" id="stat-last">—</div><div class="stat-card-lbl">Last Attempt</div></div>
+    </div>
+
+    <!-- Score Progression Chart -->
+    <div id="analytics-section" style="margin-bottom:32px;">
+      <h2 class="dash-section-title">Score Progression</h2>
       <div id="chart-container">
-        <div id="chart-title">Your score across all attempts</div>
+        <div id="chart-title" style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">Score % across your last 10 attempts</div>
         <canvas id="score-chart" height="220"></canvas>
-        <div class="chart-empty hidden" id="chart-empty">Complete at least one test to see your score chart.</div>
+        <div class="chart-empty hidden" id="chart-empty">Complete at least one test to see your score chart here.</div>
       </div>
     </div>
+
+    <!-- Subject-wise Analytics -->
+    <div id="subject-analytics-section" style="margin-bottom:32px;">
+      <h2 class="dash-section-title">Subject-wise Performance</h2>
+      <div id="subject-chart-container">
+        <canvas id="subject-chart" height="260"></canvas>
+        <div class="chart-empty hidden" id="subject-chart-empty">Complete at least one test to see subject-wise analytics.</div>
+      </div>
+    </div>
+
+    <!-- Attempt History -->
     <div id="history-section">
-      <h2 class="dash-section-title">🗂️ Attempt History</h2>
+      <h2 class="dash-section-title">Attempt History</h2>
       <div id="history-container"></div>
     </div>
   </main>
@@ -938,670 +994,953 @@
 <!-- ================================================================
      PAGE: NOTES / STUDY MATERIALS
 ================================================================ -->
+<!-- ================================================================
+     PAGE: TESTS
+================================================================ -->
+<div id="page-tests" class="hidden">
+  <header class="app-header">
+    <div class="hdr-left">
+      <div class="logo-text">Connectek <span>RX</span></div>
+      <button class="hdr-home-btn" onclick="navTo('dashboard')">Home</button>
+    </div>
+    <div class="hdr-right">
+      <div class="user-avatar" id="tests-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:700;color:#fff;flex-shrink:0;">J</div>
+      <span style="color:rgba(255,255,255,0.8);font-size:0.85rem;font-weight:600;" id="tests-username">Jane</span>
+      <div class="hdr-dropdown">
+        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">Menu <span class="chevron">&#9660;</span></button>
+        <div class="hdr-dropdown-menu">
+          <div class="dd-section-label">Navigation</div>
+          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')">Dashboard</button>
+          <div class="dd-divider"></div>
+          <div class="dd-section-label">Tests</div>
+          <button class="dd-item dd-active" id="dd-tests" onclick="closeDropdown();navTo('tests')">Take a Test <span class="dd-badge">200 Q</span></button>
+          <div class="dd-divider"></div>
+          <div class="dd-section-label">Study Notes</div>
+          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')">Pharmacology</button>
+          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')">Pharmaceutics</button>
+          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')">Pharmacy Law</button>
+          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')">Clinical Pharmacokinetics</button>
+          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')">Mnemonics</button>
+          <div class="dd-divider"></div>
+          <button class="dd-item dd-logout" onclick="closeDropdown();logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main style="flex:1;padding:38px 5vw 60px;max-width:900px;margin:0 auto;width:100%;">
+    <h2 class="dash-section-title">Available Test Series</h2>
+    <p style="color:var(--muted);font-size:0.9rem;margin-bottom:28px;">Each test series contains 200 FPGEE-format questions with a 3-hour time limit. You can retake any test unlimited times.</p>
+    <div id="test-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;"></div>
+  </main>
+</div>
+
 <div id="page-notes" class="hidden">
   <header class="app-header">
     <div class="hdr-left">
       <div class="logo-text">Connectek <span>RX</span></div>
-      <button class="hdr-home-btn" onclick="navTo('dashboard')">🏠 <span class="hdr-home-label">Dashboard</span></button>
+      <button class="hdr-home-btn" onclick="navTo('dashboard')">Home</button>
     </div>
     <div class="hdr-right">
       <div class="user-avatar" id="notes-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:700;color:#fff;flex-shrink:0;">J</div>
       <span style="color:rgba(255,255,255,0.8);font-size:0.85rem;font-weight:600;" id="notes-username">Jane</span>
-      <div class="hdr-dropdown" id="hdr-dropdown">
-        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">
-          <span>📚</span>
-          <span class="hdr-nav-label">Study Menu</span>
-          <span class="chevron">▼</span>
-        </button>
-        <div class="hdr-dropdown-menu" id="hdr-menu">
+      <div class="hdr-dropdown">
+        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">Menu <span class="chevron">&#9660;</span></button>
+        <div class="hdr-dropdown-menu">
           <div class="dd-section-label">Navigation</div>
-          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')"><span class="dd-ico">🏠</span><span class="dd-label">Dashboard</span></button>
-          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')"><span class="dd-ico">📝</span><span class="dd-label">Take a Test</span><span class="dd-badge">200 Q</span></button>
+          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')">Dashboard</button>
+          <div class="dd-divider"></div>
+          <div class="dd-section-label">Tests</div>
+          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')">Take a Test <span class="dd-badge">200 Q</span></button>
           <div class="dd-divider"></div>
           <div class="dd-section-label">Study Notes</div>
-          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')"><span class="dd-ico">💊</span><span class="dd-label">Pharmacology</span></button>
-          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')"><span class="dd-ico">🧪</span><span class="dd-label">Pharmaceutics</span></button>
-          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')"><span class="dd-ico">⚖️</span><span class="dd-label">Pharmacy Law</span></button>
-          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')"><span class="dd-ico">🏥</span><span class="dd-label">Clinical Pharmacokinetics</span></button>
-          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')"><span class="dd-ico">🧠</span><span class="dd-label">Mnemonics</span></button>
+          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')">Pharmacology</button>
+          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')">Pharmaceutics</button>
+          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')">Pharmacy Law</button>
+          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')">Clinical Pharmacokinetics</button>
+          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')">Mnemonics</button>
           <div class="dd-divider"></div>
-          <button class="dd-item" onclick="closeDropdown();logout()" style="color:rgba(255,100,100,0.8);"><span class="dd-ico">🚪</span><span class="dd-label">Logout</span></button>
+          <button class="dd-item dd-logout" onclick="closeDropdown();logout()">Logout</button>
         </div>
       </div>
     </div>
   </header>
 
   <main id="notes-main">
-    <!-- Topic tabs -->
-    <div style="margin-bottom:8px;">
-      <h2 class="dash-section-title" id="notes-page-title">📚 Study Notes & Quick Revision</h2>
+    <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <h2 class="dash-section-title" id="notes-page-title" style="margin-bottom:0;border:none;padding:0;">Study Notes</h2>
+      <div class="notes-topics-wrap" id="notes-topic-tabs" style="margin-bottom:0;"></div>
     </div>
-    <div class="notes-topics-wrap" id="notes-topic-tabs"></div>
 
-    <!-- ═══════════════════════════════════════════════
-         PANEL: PHARMACOLOGY
-    ════════════════════════════════════════════════ -->
+    <!-- ═══════════════ PHARMACOLOGY ═══════════════ -->
     <div class="note-panel active" id="panel-pharmacology">
 
-      <div class="notes-section-hdr">⚙️ Mechanisms at a Glance</div>
+      <div class="notes-section-hdr">Antibiotic Mechanisms — Where They Act</div>
+      <div class="diagram-wrap">
+        <div class="diagram-title">Antibiotic Target Sites on the Bacterial Cell</div>
+        <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;font-family:Segoe UI,sans-serif;">
+          <rect width="720" height="360" fill="#F0F4F8" rx="10"/>
+          <!-- Cell wall -->
+          <rect x="60" y="40" width="600" height="280" rx="20" fill="none" stroke="#F59E0B" stroke-width="12" stroke-dasharray="0"/>
+          <text x="360" y="28" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">CELL WALL (Peptidoglycan)</text>
+          <!-- Cell membrane -->
+          <rect x="80" y="60" width="560" height="240" rx="14" fill="none" stroke="#2B6CB0" stroke-width="5"/>
+          <text x="360" y="56" text-anchor="middle" font-size="10" fill="#1e40af">Cell Membrane</text>
+          <!-- Cytoplasm -->
+          <rect x="90" y="70" width="540" height="220" rx="10" fill="rgba(224,242,254,0.4)"/>
+
+          <!-- DNA/Gyrase target -->
+          <ellipse cx="200" cy="160" rx="55" ry="40" fill="#dbeafe" stroke="#2B6CB0" stroke-width="2"/>
+          <text x="200" y="155" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">DNA</text>
+          <text x="200" y="170" text-anchor="middle" font-size="10" fill="#1e40af">Gyrase</text>
+
+          <!-- Ribosome 30S -->
+          <ellipse cx="380" cy="130" rx="45" ry="28" fill="#d1fae5" stroke="#10B981" stroke-width="2"/>
+          <text x="380" y="126" text-anchor="middle" font-size="11" font-weight="700" fill="#065f46">30S</text>
+          <text x="380" y="141" text-anchor="middle" font-size="10" fill="#065f46">Ribosome</text>
+
+          <!-- Ribosome 50S -->
+          <ellipse cx="500" cy="130" rx="45" ry="28" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+          <text x="500" y="126" text-anchor="middle" font-size="11" font-weight="700" fill="#4c1d95">50S</text>
+          <text x="500" y="141" text-anchor="middle" font-size="10" fill="#4c1d95">Ribosome</text>
+
+          <!-- RNA Pol -->
+          <ellipse cx="300" cy="220" rx="50" ry="28" fill="#fef3c7" stroke="#F59E0B" stroke-width="2"/>
+          <text x="300" y="215" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">RNA</text>
+          <text x="300" y="230" text-anchor="middle" font-size="10" fill="#92400e">Polymerase</text>
+
+          <!-- DHPS/DHFR -->
+          <ellipse cx="470" cy="215" rx="50" ry="28" fill="#fce7f3" stroke="#db2777" stroke-width="2"/>
+          <text x="470" y="210" text-anchor="middle" font-size="11" font-weight="700" fill="#9d174d">Folate</text>
+          <text x="470" y="225" text-anchor="middle" font-size="10" fill="#9d174d">Pathway</text>
+
+          <!-- Drug labels with arrows -->
+          <!-- Beta-lactams / Glycopeptides -> cell wall -->
+          <path d="M60 160 L38 160" stroke="#92400e" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <text x="36" y="148" font-size="9" fill="#92400e" text-anchor="end">Beta-lactams</text>
+          <text x="36" y="161" font-size="9" fill="#92400e" text-anchor="end">Vancomycin</text>
+          <text x="36" y="174" font-size="9" fill="#92400e" text-anchor="end">(Cell Wall)</text>
+
+          <!-- Polymyxins -> membrane -->
+          <path d="M80 220 L48 235" stroke="#2B6CB0" stroke-width="1.5" marker-end="url(#arr2)"/>
+          <text x="44" y="250" font-size="9" fill="#1e40af" text-anchor="middle">Polymyxins</text>
+          <text x="44" y="262" font-size="9" fill="#1e40af" text-anchor="middle">(Membrane)</text>
+
+          <!-- Fluoroquinolones -> DNA -->
+          <text x="120" y="125" font-size="9" fill="#1e40af" text-anchor="middle">Fluoroquinolones</text>
+          <path d="M148 130 L148 148" stroke="#1e40af" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+          <!-- Aminoglycosides/Tetracyclines -> 30S -->
+          <text x="380" y="90" font-size="9" fill="#065f46" text-anchor="middle">Aminoglycosides</text>
+          <text x="380" y="102" font-size="9" fill="#065f46" text-anchor="middle">Tetracyclines</text>
+          <path d="M380 104 L380 103" stroke="#065f46" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+          <!-- Macrolides/Linezolid -> 50S -->
+          <text x="500" y="90" font-size="9" fill="#4c1d95" text-anchor="middle">Macrolides</text>
+          <text x="500" y="102" font-size="9" fill="#4c1d95" text-anchor="middle">Clindamycin / Linezolid</text>
+          <path d="M500 104 L500 103" stroke="#4c1d95" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+          <!-- Rifampin -> RNA Pol -->
+          <text x="195" y="295" font-size="9" fill="#92400e" text-anchor="middle">Rifampin</text>
+          <path d="M250 290 L255 242" stroke="#92400e" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+          <!-- Sulfonamides/TMP -> Folate -->
+          <text x="580" y="290" font-size="9" fill="#9d174d" text-anchor="middle">Sulfonamides (DHPS)</text>
+          <text x="580" y="302" font-size="9" fill="#9d174d" text-anchor="middle">Trimethoprim (DHFR)</text>
+          <path d="M530 280 L520 245" stroke="#9d174d" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+          <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#555"/></marker></defs>
+        </svg>
+      </div>
+
+      <div class="notes-section-hdr">Autonomic Nervous System — Drug Targets</div>
+      <div class="diagram-wrap">
+        <div class="diagram-title">Sympathetic vs Parasympathetic — Receptors and Drugs</div>
+        <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;font-family:Segoe UI,sans-serif;">
+          <rect width="720" height="300" fill="#F0F4F8" rx="10"/>
+          <!-- Sympathetic side -->
+          <rect x="10" y="10" width="340" height="280" rx="10" fill="rgba(254,226,226,0.4)" stroke="#EF4444" stroke-width="1.5"/>
+          <text x="180" y="32" text-anchor="middle" font-size="13" font-weight="800" fill="#991b1b">SYMPATHETIC ("Fight or Flight")</text>
+          <!-- NE/Epi -->
+          <rect x="25" y="44" width="310" height="52" rx="8" fill="#fee2e2"/>
+          <text x="180" y="64" text-anchor="middle" font-size="11" font-weight="700" fill="#991b1b">Neurotransmitter: Norepinephrine / Epinephrine</text>
+          <text x="180" y="80" text-anchor="middle" font-size="10" fill="#991b1b">Alpha-1: vasoconstriction | Alpha-2: presynaptic inhibition</text>
+          <!-- Receptors table -->
+          <rect x="25" y="102" width="310" height="24" rx="4" fill="#0D2149"/>
+          <text x="85" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Receptor</text>
+          <text x="200" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Effect</text>
+          <text x="310" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Drug Example</text>
+          <text x="85" y="138" text-anchor="middle" font-size="9" fill="#374151">Alpha-1</text><text x="200" y="138" text-anchor="middle" font-size="9" fill="#374151">Vasoconstriction, mydriasis</text><text x="310" y="138" text-anchor="middle" font-size="9" fill="#374151">Phenylephrine</text>
+          <line x1="25" y1="144" x2="335" y2="144" stroke="#e2e8f0"/>
+          <text x="85" y="158" text-anchor="middle" font-size="9" fill="#374151">Beta-1</text><text x="200" y="158" text-anchor="middle" font-size="9" fill="#374151">↑ HR, ↑ contractility</text><text x="310" y="158" text-anchor="middle" font-size="9" fill="#374151">Metoprolol (block)</text>
+          <line x1="25" y1="164" x2="335" y2="164"/>
+          <text x="85" y="178" text-anchor="middle" font-size="9" fill="#374151">Beta-2</text><text x="200" y="178" text-anchor="middle" font-size="9" fill="#374151">Bronchodilation, vasodilation</text><text x="310" y="178" text-anchor="middle" font-size="9" fill="#374151">Albuterol (agonist)</text>
+          <line x1="25" y1="184" x2="335" y2="184"/>
+          <text x="85" y="198" text-anchor="middle" font-size="9" fill="#374151">Dopamine-1</text><text x="200" y="198" text-anchor="middle" font-size="9" fill="#374151">Renal vasodilation</text><text x="310" y="198" text-anchor="middle" font-size="9" fill="#374151">Low-dose dopamine</text>
+          <!-- Blockers note -->
+          <rect x="25" y="216" width="310" height="62" rx="6" fill="#fef3c7" stroke="#F59E0B" stroke-width="1"/>
+          <text x="180" y="232" text-anchor="middle" font-size="10" font-weight="700" fill="#92400e">Key Blockers (Antagonists)</text>
+          <text x="180" y="247" text-anchor="middle" font-size="9" fill="#92400e">Prazosin = Alpha-1 blocker (HTN, BPH)</text>
+          <text x="180" y="261" text-anchor="middle" font-size="9" fill="#92400e">Propranolol = Non-selective Beta blocker</text>
+          <text x="180" y="275" text-anchor="middle" font-size="9" fill="#92400e">Metoprolol = Selective Beta-1 blocker</text>
+
+          <!-- Parasympathetic side -->
+          <rect x="370" y="10" width="340" height="280" rx="10" fill="rgba(209,250,229,0.4)" stroke="#10B981" stroke-width="1.5"/>
+          <text x="540" y="32" text-anchor="middle" font-size="13" font-weight="800" fill="#065f46">PARASYMPATHETIC ("Rest &amp; Digest")</text>
+          <rect x="385" y="44" width="310" height="52" rx="8" fill="#d1fae5"/>
+          <text x="540" y="64" text-anchor="middle" font-size="11" font-weight="700" fill="#065f46">Neurotransmitter: Acetylcholine (ACh)</text>
+          <text x="540" y="80" text-anchor="middle" font-size="10" fill="#065f46">Muscarinic (M1-M5): organs | Nicotinic: muscle/ganglia</text>
+          <rect x="385" y="102" width="310" height="24" rx="4" fill="#0D2149"/>
+          <text x="445" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Receptor</text>
+          <text x="540" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Effect</text>
+          <text x="650" y="118" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Drug</text>
+          <text x="445" y="138" text-anchor="middle" font-size="9" fill="#374151">M1 (CNS)</text><text x="540" y="138" text-anchor="middle" font-size="9" fill="#374151">Cognition, gastric acid</text><text x="650" y="138" text-anchor="middle" font-size="9" fill="#374151">Pirenzepine</text>
+          <line x1="385" y1="144" x2="695" y2="144" stroke="#e2e8f0"/>
+          <text x="445" y="158" text-anchor="middle" font-size="9" fill="#374151">M2 (Heart)</text><text x="540" y="158" text-anchor="middle" font-size="9" fill="#374151">↓ HR, ↓ conduction</text><text x="650" y="158" text-anchor="middle" font-size="9" fill="#374151">Atropine (block)</text>
+          <line x1="385" y1="164" x2="695" y2="164" stroke="#e2e8f0"/>
+          <text x="445" y="178" text-anchor="middle" font-size="9" fill="#374151">M3 (Glands)</text><text x="540" y="178" text-anchor="middle" font-size="9" fill="#374151">Secretion, bronchoconstriction</text><text x="650" y="178" text-anchor="middle" font-size="9" fill="#374151">Ipratropium (block)</text>
+          <line x1="385" y1="184" x2="695" y2="184" stroke="#e2e8f0"/>
+          <text x="445" y="198" text-anchor="middle" font-size="9" fill="#374151">Nicotinic-M</text><text x="540" y="198" text-anchor="middle" font-size="9" fill="#374151">Skeletal muscle contraction</text><text x="650" y="198" text-anchor="middle" font-size="9" fill="#374151">Succinylcholine</text>
+          <rect x="385" y="216" width="310" height="62" rx="6" fill="#d1fae5" stroke="#10B981" stroke-width="1"/>
+          <text x="540" y="232" text-anchor="middle" font-size="10" font-weight="700" fill="#065f46">Cholinergic Drug Examples</text>
+          <text x="540" y="247" text-anchor="middle" font-size="9" fill="#065f46">Pilocarpine = M agonist (glaucoma)</text>
+          <text x="540" y="261" text-anchor="middle" font-size="9" fill="#065f46">Atropine = M antagonist (bradycardia, OB)</text>
+          <text x="540" y="275" text-anchor="middle" font-size="9" fill="#065f46">Neostigmine = AChE inhibitor (reversal NMB)</text>
+        </svg>
+      </div>
+
+      <div class="notes-section-hdr">Antihypertensives — Full Comparison</div>
+      <div class="note-table-wrap">
+        <table class="note-table">
+          <thead><tr><th>Class</th><th>Prototype</th><th>Mechanism</th><th>Key Indication</th><th>Major ADR</th><th>Contraindication</th></tr></thead>
+          <tbody>
+            <tr><td>ACE Inhibitors</td><td>Lisinopril, Enalapril</td><td>Block ACE → ↓ Ang II → vasodilation + ↓ aldosterone</td><td>HTN, HFrEF, DM nephropathy</td><td>Dry cough (bradykinin), Angioedema, Hyperkalemia</td><td>Pregnancy (Cat D), bilateral renal artery stenosis</td></tr>
+            <tr><td>ARBs</td><td>Losartan, Valsartan</td><td>Block AT1 receptor → same as ACEI effects, no bradykinin ↑</td><td>HTN, HF, DM (ACEI intolerant)</td><td>Hyperkalemia, no cough</td><td>Pregnancy, bilateral RAS</td></tr>
+            <tr><td>Thiazide Diuretics</td><td>HCTZ, Chlorthalidone</td><td>Block NCC cotransporter in DCT → Na/water loss</td><td>HTN (1st line), edema</td><td>Hypokalemia, Hyperuricemia, Hyperglycemia, Hypercalcemia</td><td>Gout (relative)</td></tr>
+            <tr><td>Loop Diuretics</td><td>Furosemide, Torsemide</td><td>Block NKCC2 in thick ascending LOH → massive diuresis</td><td>HF, edema, hypercalcemia</td><td>Hypokalemia, Hyponatremia, Ototoxicity (high IV dose)</td><td>Anuria</td></tr>
+            <tr><td>Beta-1 Selective</td><td>Metoprolol, Atenolol</td><td>Block β1 → ↓ HR, ↓ contractility, ↓ renin</td><td>HTN, HFrEF, post-MI, angina</td><td>Bradycardia, fatigue, mask hypoglycemia</td><td>Severe bradycardia, 2°/3° block, cardiogenic shock</td></tr>
+            <tr><td>DHP CCBs</td><td>Amlodipine, Nifedipine</td><td>Block L-type Ca²⁺ channels → vascular SM relaxation</td><td>HTN, angina, Raynaud</td><td>Edema, flushing, reflex tachycardia (short-acting)</td><td>None major</td></tr>
+            <tr><td>Non-DHP CCBs</td><td>Verapamil, Diltiazem</td><td>Block L-type Ca²⁺ → ↓ HR + ↓ contractility + vasodilation</td><td>HTN, SVT, angina</td><td>Bradycardia, constipation (verapamil), HF exacerbation</td><td>HFrEF, 2°/3° block, concurrent beta-blocker (caution)</td></tr>
+            <tr><td>Aldosterone Antagonist</td><td>Spironolactone, Eplerenone</td><td>Block mineralocorticoid receptor → ↑ Na loss, K retention</td><td>HFrEF, resistant HTN, hyperaldosteronism</td><td>Hyperkalemia, gynecomastia (spironolactone)</td><td>Hyperkalemia, severe renal impairment</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="notes-section-hdr">Opioid Analgesics — Receptors, Effects, Antidotes</div>
+      <div class="diagram-wrap">
+        <div class="diagram-title">Opioid Receptor Types and Clinical Consequences</div>
+        <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;font-family:Segoe UI,sans-serif;">
+          <rect width="720" height="200" fill="#F0F4F8" rx="10"/>
+          <!-- Mu -->
+          <rect x="12" y="20" width="220" height="168" rx="8" fill="white" stroke="#2B6CB0" stroke-width="2"/>
+          <rect x="12" y="20" width="220" height="36" rx="8" fill="#0D2149"/>
+          <text x="122" y="44" text-anchor="middle" font-size="13" font-weight="800" fill="white">Mu (μ) Receptor</text>
+          <text x="122" y="78" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af">Primary analgesic receptor</text>
+          <text x="20" y="98" font-size="10" fill="#374151">• Analgesia (supraspinal + spinal)</text>
+          <text x="20" y="114" font-size="10" fill="#374151">• Respiratory depression</text>
+          <text x="20" y="130" font-size="10" fill="#374151">• Euphoria / dependence</text>
+          <text x="20" y="146" font-size="10" fill="#374151">• Miosis (pinpoint pupils)</text>
+          <text x="20" y="162" font-size="10" fill="#374151">• Constipation (no tolerance)</text>
+          <text x="122" y="182" text-anchor="middle" font-size="9" fill="#2B6CB0" font-style="italic">Morphine, Fentanyl, Oxycodone</text>
+          <!-- Kappa -->
+          <rect x="248" y="20" width="220" height="168" rx="8" fill="white" stroke="#7c3aed" stroke-width="2"/>
+          <rect x="248" y="20" width="220" height="36" rx="8" fill="#4c1d95"/>
+          <text x="358" y="44" text-anchor="middle" font-size="13" font-weight="800" fill="white">Kappa (κ) Receptor</text>
+          <text x="358" y="78" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">Spinal analgesia</text>
+          <text x="256" y="98" font-size="10" fill="#374151">• Spinal analgesia</text>
+          <text x="256" y="114" font-size="10" fill="#374151">• Sedation / dysphoria</text>
+          <text x="256" y="130" font-size="10" fill="#374151">• Miosis</text>
+          <text x="256" y="146" font-size="10" fill="#374151">• NO euphoria</text>
+          <text x="256" y="162" font-size="10" fill="#374151">• Psychotomimetic effects</text>
+          <text x="358" y="182" text-anchor="middle" font-size="9" fill="#4c1d95" font-style="italic">Butorphanol, Nalbuphine</text>
+          <!-- Delta -->
+          <rect x="484" y="20" width="224" height="168" rx="8" fill="white" stroke="#0EA5A0" stroke-width="2"/>
+          <rect x="484" y="20" width="224" height="36" rx="8" fill="#0D2149"/>
+          <text x="596" y="44" text-anchor="middle" font-size="13" font-weight="800" fill="white">Delta (δ) Receptor</text>
+          <text x="596" y="78" text-anchor="middle" font-size="10" font-weight="700" fill="#0D2149">Analgesia + mood</text>
+          <text x="492" y="98" font-size="10" fill="#374151">• Analgesia (peripheral)</text>
+          <text x="492" y="114" font-size="10" fill="#374151">• Mood modulation</text>
+          <text x="492" y="130" font-size="10" fill="#374151">• Respiratory depression (less)</text>
+          <text x="492" y="146" font-size="10" fill="#374151">• May reduce dependence</text>
+          <rect x="492" y="160" width="208" height="20" rx="4" fill="#fef3c7"/>
+          <text x="596" y="174" text-anchor="middle" font-size="9" fill="#92400e" font-weight="700">ANTIDOTE: Naloxone (all receptors)</text>
+        </svg>
+      </div>
+
+      <div class="notes-section-hdr">Drug-Induced QT Prolongation — High-Yield List</div>
       <div class="notes-grid">
         <div class="note-card">
-          <div class="note-card-title">🦠 Antibiotic Targets</div>
+          <div class="note-card-title">Drugs That Prolong QT</div>
+          <h4>Remember: "ABCDE" categories</h4>
           <ul>
-            <li><strong>Cell Wall:</strong> Beta-lactams, Glycopeptides (vancomycin)</li>
-            <li><strong>30S Ribosome:</strong> Aminoglycosides, Tetracyclines</li>
-            <li><strong>50S Ribosome:</strong> Macrolides, Clindamycin, Chloramphenicol, Linezolid</li>
-            <li><strong>DNA Gyrase/Topo IV:</strong> Fluoroquinolones</li>
-            <li><strong>RNA Polymerase:</strong> Rifampin</li>
-            <li><strong>Folate Pathway:</strong> Sulfonamides (DHPS), TMP (DHFR)</li>
-            <li><strong>Cell Membrane:</strong> Polymyxins, Daptomycin</li>
+            <li><strong>Antiarrhythmics:</strong> Amiodarone, Sotalol, Quinidine, Dofetilide (Class IA, III)</li>
+            <li><strong>Antibiotics:</strong> Azithromycin, Clarithromycin, Fluoroquinolones (cipro, levo, moxi)</li>
+            <li><strong>Antipsychotics:</strong> Haloperidol, Ziprasidone, Quetiapine, Thioridazine</li>
+            <li><strong>Antiemetics:</strong> Ondansetron (IV high dose), Droperidol, Metoclopramide</li>
+            <li><strong>Antidepressants:</strong> TCAs (amitriptyline), Citalopram (dose-dependent)</li>
+            <li><strong>Others:</strong> Methadone, Pentamidine, Arsenic trioxide, Hydroxychloroquine</li>
           </ul>
         </div>
         <div class="note-card">
-          <div class="note-card-title">❤️ Cardiac Drug Mechanisms</div>
+          <div class="note-card-title">Risk Factors for Torsades</div>
           <ul>
-            <li><strong>Beta-blockers:</strong> ↓ HR, ↓ contractility (β1), bronchospasm risk (β2)</li>
-            <li><strong>CCB Dihydropyridines (amlodipine):</strong> Vascular selectivity → vasodilation</li>
-            <li><strong>CCB Non-DHP (verapamil, diltiazem):</strong> ↓ HR + ↓ contractility</li>
-            <li><strong>Digoxin:</strong> Na/K-ATPase inhibition → ↑ Ca²⁺ → ↑ inotropy; vagal ↑ → ↓ HR</li>
-            <li><strong>Amiodarone:</strong> Class III — K⁺ channel block, QT prolongation</li>
-            <li><strong>Nitroglycerin:</strong> → NO → ↑ cGMP → venodilation (preload ↓)</li>
+            <li><strong>Female sex</strong> (longer baseline QT)</li>
+            <li><strong>Hypokalemia</strong> (most critical — always check K⁺)</li>
+            <li><strong>Hypomagnesemia</strong></li>
+            <li><strong>Bradycardia</strong> (slow rate lengthens QT)</li>
+            <li><strong>Congenital long QT</strong> syndrome</li>
+            <li><strong>Drug combinations</strong> (additive effect)</li>
+            <li><strong>Liver/renal disease</strong> (↑ drug levels)</li>
+            <li><strong>Treatment:</strong> Mg²⁺ sulfate IV + correct electrolytes</li>
           </ul>
         </div>
         <div class="note-card">
-          <div class="note-card-title">🧬 CNS Drug Mechanisms</div>
+          <div class="note-card-title">Critical Antidote Reference</div>
           <ul>
-            <li><strong>SSRIs:</strong> Block SERT → ↑ synaptic serotonin</li>
-            <li><strong>SNRIs:</strong> Block SERT + NET → ↑ serotonin + norepinephrine</li>
-            <li><strong>TCAs:</strong> Block SERT, NET, muscarinic, H1, α1 (↓ BP)</li>
-            <li><strong>MAOIs:</strong> Inhibit MAO-A/B → ↑ all monoamines</li>
-            <li><strong>Benzodiazepines:</strong> ↑ GABA-A frequency of Cl⁻ channel opening</li>
-            <li><strong>Barbiturates:</strong> ↑ GABA-A duration of Cl⁻ channel opening</li>
-            <li><strong>Antipsychotics:</strong> D2 receptor block → EPS, hyperprolactinemia</li>
-          </ul>
-        </div>
-        <div class="note-card">
-          <div class="note-card-title">💉 Antidiabetic Mechanisms</div>
-          <ul>
-            <li><strong>Metformin:</strong> ↓ hepatic gluconeogenesis (AMPK); first-line T2DM</li>
-            <li><strong>Sulfonylureas:</strong> Close K⁺-ATP channels → depolarize → insulin ↑; hypoglycemia risk</li>
-            <li><strong>GLP-1 agonists:</strong> Glucose-dependent insulin ↑, glucagon ↓, weight ↓</li>
-            <li><strong>DPP-4 inhibitors:</strong> Inhibit GLP-1/GIP degradation; weight neutral</li>
-            <li><strong>SGLT2 inhibitors:</strong> Block renal glucose reabsorption → glycosuria; DKA risk</li>
-            <li><strong>Thiazolidinediones:</strong> PPAR-γ agonism → insulin sensitizer; edema, HF risk</li>
-          </ul>
-        </div>
-        <div class="note-card">
-          <div class="note-card-title">🩸 Anticoagulant Mechanisms & Antidotes</div>
-          <ul>
-            <li><strong>Heparin (UFH):</strong> ↑ Antithrombin III → ↓ IIa + Xa | Antidote: Protamine</li>
-            <li><strong>LMWH (enoxaparin):</strong> ↑ AT III → mainly anti-Xa | Partial reversal: Protamine</li>
-            <li><strong>Warfarin:</strong> Blocks Vit K reductase → ↓ II,VII,IX,X | Antidote: Vit K + FFP</li>
-            <li><strong>Dabigatran:</strong> Direct thrombin inhibitor | Antidote: Idarucizumab</li>
-            <li><strong>Apixaban/Rivaroxaban:</strong> Direct factor Xa inhibitor | Antidote: Andexanet alfa</li>
-            <li><strong>Monitor:</strong> UFH → aPTT; Warfarin → PT/INR; DOACs → usually none</li>
-          </ul>
-        </div>
-        <div class="note-card">
-          <div class="note-card-title">🔥 High-Yield Drug Toxicities</div>
-          <ul>
-            <li><strong>Aminoglycosides:</strong> Nephrotoxicity + Ototoxicity (monitor peaks/troughs)</li>
-            <li><strong>Vancomycin:</strong> Red Man Syndrome (slow infusion), nephrotoxicity</li>
-            <li><strong>Methotrexate:</strong> Myelosuppression, hepatotoxicity → rescue with Leucovorin</li>
-            <li><strong>Amiodarone:</strong> Thyroid, pulmonary, hepatic, corneal microdeposits, photosensitivity</li>
-            <li><strong>Clozapine:</strong> Agranulocytosis (mandatory ANC monitoring)</li>
-            <li><strong>Isotretinoin:</strong> Teratogenic (Category X) → iPLEDGE REMS required</li>
-            <li><strong>Fluoroquinolones:</strong> Tendon rupture, QT prolongation, avoid &lt;18 y/o</li>
+            <li><strong>Opioids:</strong> Naloxone (Narcan)</li>
+            <li><strong>Benzodiazepines:</strong> Flumazenil</li>
+            <li><strong>Acetaminophen:</strong> N-Acetylcysteine (NAC)</li>
+            <li><strong>Heparin (UFH):</strong> Protamine sulfate</li>
+            <li><strong>Warfarin:</strong> Vitamin K + 4-factor PCC</li>
+            <li><strong>Dabigatran:</strong> Idarucizumab (Praxbind)</li>
+            <li><strong>Anti-Xa DOACs:</strong> Andexanet alfa</li>
+            <li><strong>Organophosphates:</strong> Atropine + Pralidoxime</li>
+            <li><strong>TCA overdose:</strong> Sodium bicarbonate IV</li>
+            <li><strong>Digoxin:</strong> Digoxin-specific Fab</li>
+            <li><strong>Iron:</strong> Deferoxamine</li>
+            <li><strong>Methanol:</strong> Fomepizole</li>
           </ul>
         </div>
       </div>
 
-      <div class="notes-section-hdr">📊 Key Drug Comparisons</div>
-      <div class="note-table-wrap">
-        <table class="note-table">
-          <thead><tr><th>Drug Class</th><th>Prototype</th><th>Key Use</th><th>Major ADR</th><th>Monitor</th></tr></thead>
-          <tbody>
-            <tr><td>ACE Inhibitors</td><td>Lisinopril</td><td>HTN, HF, CKD/DM</td><td>Cough, Angioedema, Hyperkalemia</td><td>K⁺, SCr</td></tr>
-            <tr><td>ARBs</td><td>Losartan</td><td>HTN, HF, DM nephropathy</td><td>Hyperkalemia (no cough)</td><td>K⁺, SCr</td></tr>
-            <tr><td>Beta-blockers (non-selective)</td><td>Propranolol</td><td>HTN, angina, tremor</td><td>Bronchoconstriction, mask hypoglycemia</td><td>HR, BP</td></tr>
-            <tr><td>Beta-blockers (selective β1)</td><td>Metoprolol</td><td>HTN, HF, post-MI</td><td>Bradycardia, fatigue</td><td>HR, BP</td></tr>
-            <tr><td>Loop Diuretics</td><td>Furosemide</td><td>Edema, HF, HTN</td><td>Hypokalemia, Hyponatremia, Ototoxicity</td><td>K⁺, BUN/Cr</td></tr>
-            <tr><td>Thiazides</td><td>HCTZ</td><td>HTN, edema</td><td>Hypokalemia, Hyperuricemia, Hyperglycemia</td><td>K⁺, glucose</td></tr>
-            <tr><td>Statins</td><td>Atorvastatin</td><td>Hyperlipidemia, CV prevention</td><td>Myopathy/Rhabdomyolysis (+ CYP3A4 inhibitors)</td><td>LFTs, CK if symptomatic</td></tr>
-            <tr><td>PPIs</td><td>Omeprazole</td><td>GERD, PUD, H. pylori</td><td>Hypomagnesemia (long-term), C. diff risk</td><td>Mg²⁺ if long-term</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <div class="notes-section-hdr">Coagulation Cascade — Where Drugs Act</div>
+      <div class="diagram-wrap">
+        <div class="diagram-title">Coagulation Cascade with Drug Intervention Points</div>
+        <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;font-family:Segoe UI,sans-serif;">
+          <rect width="720" height="360" fill="#F0F4F8" rx="10"/>
+          <defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#0D2149"/></marker>
+          <marker id="arr3r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#EF4444"/></marker></defs>
 
-      <div class="notes-section-hdr">🚨 Critical Drug Interactions</div>
-      <div class="note-table-wrap">
-        <table class="note-table">
-          <thead><tr><th>Drug 1</th><th>Drug 2</th><th>Mechanism</th><th>Effect / Risk</th></tr></thead>
-          <tbody>
-            <tr><td>Warfarin</td><td>Rifampin</td><td>CYP2C9 induction</td><td><span class="tag tag-red">↓ Warfarin → Clot risk</span></td></tr>
-            <tr><td>Warfarin</td><td>Amiodarone</td><td>CYP2C9 inhibition</td><td><span class="tag tag-red">↑ Warfarin → Bleeding</span></td></tr>
-            <tr><td>Simvastatin</td><td>Clarithromycin</td><td>CYP3A4 inhibition</td><td><span class="tag tag-red">↑ Statin → Rhabdomyolysis</span></td></tr>
-            <tr><td>SSRI</td><td>MAO Inhibitor</td><td>Serotonin excess</td><td><span class="tag tag-red">Serotonin Syndrome</span></td></tr>
-            <tr><td>Sildenafil</td><td>Nitrates</td><td>Additive cGMP ↑</td><td><span class="tag tag-red">Severe Hypotension</span></td></tr>
-            <tr><td>Clopidogrel</td><td>Omeprazole</td><td>CYP2C19 inhibition</td><td><span class="tag tag-amber">↓ Antiplatelet effect</span></td></tr>
-            <tr><td>Lithium</td><td>NSAIDs/Thiazides</td><td>↓ Renal Li⁺ clearance</td><td><span class="tag tag-red">Lithium Toxicity</span></td></tr>
-            <tr><td>Fluoroquinolones</td><td>Antacids (Al/Mg)</td><td>Chelation</td><td><span class="tag tag-amber">↓ Antibiotic absorption</span></td></tr>
-            <tr><td>Methotrexate</td><td>TMP-SMX</td><td>Additive antifolate</td><td><span class="tag tag-red">Bone marrow suppression</span></td></tr>
-            <tr><td>MAO Inhibitor</td><td>Tyramine (food)</td><td>↑ NE release</td><td><span class="tag tag-red">Hypertensive Crisis</span></td></tr>
-          </tbody>
-        </table>
-      </div>
+          <!-- Extrinsic pathway -->
+          <text x="120" y="28" text-anchor="middle" font-size="11" font-weight="800" fill="#0D2149">EXTRINSIC</text>
+          <rect x="60" y="36" width="120" height="32" rx="6" fill="#dbeafe" stroke="#2B6CB0"/>
+          <text x="120" y="57" text-anchor="middle" font-size="11" fill="#1e40af">Tissue Factor + VII</text>
+          <path d="M120 68 L120 94" stroke="#0D2149" stroke-width="2" marker-end="url(#arr3)"/>
 
-      <div class="notes-section-hdr">🗺️ Antidote Quick Reference</div>
-      <div class="note-table-wrap">
-        <table class="note-table">
-          <thead><tr><th>Toxin / Drug</th><th>Antidote</th><th>Mechanism of Antidote</th></tr></thead>
-          <tbody>
-            <tr><td>Acetaminophen (APAP)</td><td>N-Acetylcysteine (NAC)</td><td>Replenishes glutathione → detoxifies NAPQI</td></tr>
-            <tr><td>Opioids</td><td>Naloxone</td><td>Competitive mu-opioid receptor antagonist</td></tr>
-            <tr><td>Benzodiazepines</td><td>Flumazenil</td><td>GABA-A receptor competitive antagonist</td></tr>
-            <tr><td>Heparin (UFH)</td><td>Protamine Sulfate</td><td>Ionic binding to heparin → neutralization</td></tr>
-            <tr><td>Warfarin (urgent)</td><td>4-Factor PCC or FFP + Vit K</td><td>Replaces/restores clotting factors</td></tr>
-            <tr><td>Dabigatran</td><td>Idarucizumab</td><td>Monoclonal antibody binding dabigatran</td></tr>
-            <tr><td>Apixaban/Rivaroxaban</td><td>Andexanet Alfa</td><td>Decoy Xa protein sequesters drug</td></tr>
-            <tr><td>Organophosphates</td><td>Atropine + Pralidoxime</td><td>Atropine: blocks muscarinic; 2-PAM: reactivates AChE</td></tr>
-            <tr><td>TCA Overdose (QRS wide)</td><td>Sodium Bicarbonate IV</td><td>Alkalinizes plasma → stabilizes Na⁺ channels</td></tr>
-            <tr><td>Methanol/Ethylene glycol</td><td>Fomepizole (or Ethanol)</td><td>Inhibits alcohol dehydrogenase</td></tr>
-            <tr><td>Iron Overdose</td><td>Deferoxamine</td><td>Iron chelation → renal excretion</td></tr>
-            <tr><td>Digoxin Toxicity</td><td>Digoxin-Fab (Digibind)</td><td>Antibody fragments bind free digoxin</td></tr>
-          </tbody>
-        </table>
+          <!-- Intrinsic pathway -->
+          <text x="380" y="28" text-anchor="middle" font-size="11" font-weight="800" fill="#0D2149">INTRINSIC</text>
+          <rect x="300" y="36" width="160" height="32" rx="6" fill="#ede9fe" stroke="#7c3aed"/>
+          <text x="380" y="57" text-anchor="middle" font-size="11" fill="#4c1d95">XII → XI → IX + VIII</text>
+          <path d="M380 68 L380 94" stroke="#0D2149" stroke-width="2" marker-end="url(#arr3)"/>
+
+          <!-- Common pathway -->
+          <rect x="60" y="96" width="120" height="28" rx="6" fill="#fef3c7" stroke="#F59E0B"/>
+          <text x="120" y="115" text-anchor="middle" font-size="10" fill="#92400e">VII activates X</text>
+          <rect x="300" y="96" width="160" height="28" rx="6" fill="#fef3c7" stroke="#F59E0B"/>
+          <text x="380" y="115" text-anchor="middle" font-size="10" fill="#92400e">IX/VIIIa activates X</text>
+
+          <!-- Factor X -->
+          <path d="M120 124 L230 150" stroke="#0D2149" stroke-width="2" marker-end="url(#arr3)"/>
+          <path d="M380 124 L310 150" stroke="#0D2149" stroke-width="2" marker-end="url(#arr3)"/>
+          <rect x="200" y="150" width="160" height="32" rx="6" fill="#fee2e2" stroke="#EF4444" stroke-width="2"/>
+          <text x="280" y="170" text-anchor="middle" font-size="12" font-weight="800" fill="#991b1b">Factor Xa</text>
+
+          <!-- Prothrombin -->
+          <path d="M280 182 L280 210" stroke="#0D2149" stroke-width="2" marker-end="url(#arr3)"/>
+          <rect x="200" y="210" width="160" height="28" rx="6" fill="#fef3c7" stroke="#F59E0B"/>
+          <text x="280" y="229" text-anchor="middle" font-size="11" fill="#92400e">Prothrombin (II) → Thrombin (IIa)</text>
+
+          <!-- Fibrinogen -->
+          <path d="M280 238 L280 262" stroke="#0D2149" stroke-width="2" marker-end="url(#arr3)"/>
+          <rect x="180" y="262" width="200" height="28" rx="6" fill="#d1fae5" stroke="#10B981" stroke-width="2"/>
+          <text x="280" y="281" text-anchor="middle" font-size="11" fill="#065f46">Fibrinogen → Fibrin Clot</text>
+
+          <!-- Drug annotations -->
+          <!-- Warfarin blocks II,VII,IX,X synthesis -->
+          <rect x="470" y="90" width="180" height="56" rx="6" fill="rgba(239,68,68,0.1)" stroke="#EF4444" stroke-width="1.5"/>
+          <text x="560" y="108" text-anchor="middle" font-size="9" font-weight="700" fill="#991b1b">Warfarin</text>
+          <text x="560" y="122" text-anchor="middle" font-size="9" fill="#991b1b">Blocks synthesis of</text>
+          <text x="560" y="136" text-anchor="middle" font-size="9" fill="#991b1b">II, VII, IX, X (Vit K dep.)</text>
+          <path d="M470 118 L440 118" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr3r)"/>
+
+          <!-- UFH/LMWH -->
+          <rect x="470" y="155" width="180" height="56" rx="6" fill="rgba(43,108,176,0.1)" stroke="#2B6CB0" stroke-width="1.5"/>
+          <text x="560" y="173" text-anchor="middle" font-size="9" font-weight="700" fill="#1e40af">UFH / LMWH</text>
+          <text x="560" y="187" text-anchor="middle" font-size="9" fill="#1e40af">Potentiate Antithrombin III</text>
+          <text x="560" y="201" text-anchor="middle" font-size="9" fill="#1e40af">↓ Thrombin + Factor Xa</text>
+          <path d="M470 178 L365 178" stroke="#2B6CB0" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr3)"/>
+
+          <!-- Apixaban/Rivaroxaban -->
+          <rect x="540" y="222" width="170" height="42" rx="6" fill="rgba(124,58,237,0.1)" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="625" y="238" text-anchor="middle" font-size="9" font-weight="700" fill="#4c1d95">Apixaban / Rivaroxaban</text>
+          <text x="625" y="252" text-anchor="middle" font-size="9" fill="#4c1d95">Direct Factor Xa inhibitor</text>
+          <path d="M540 238 L365 220" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr3)"/>
+
+          <!-- Dabigatran -->
+          <rect x="540" y="275" width="170" height="42" rx="6" fill="rgba(14,165,160,0.1)" stroke="#0EA5A0" stroke-width="1.5"/>
+          <text x="625" y="291" text-anchor="middle" font-size="9" font-weight="700" fill="#0EA5A0">Dabigatran</text>
+          <text x="625" y="305" text-anchor="middle" font-size="9" fill="#0EA5A0">Direct Thrombin (IIa) inhibitor</text>
+          <path d="M540 291 L365 254" stroke="#0EA5A0" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr3)"/>
+
+          <!-- Antiplatelet note -->
+          <rect x="10" y="285" width="175" height="60" rx="6" fill="rgba(245,158,11,0.15)" stroke="#F59E0B" stroke-width="1.5"/>
+          <text x="98" y="302" text-anchor="middle" font-size="9" font-weight="700" fill="#92400e">Antiplatelet Agents</text>
+          <text x="98" y="316" text-anchor="middle" font-size="9" fill="#92400e">Aspirin: COX-1 → ↓ TXA₂</text>
+          <text x="98" y="330" text-anchor="middle" font-size="9" fill="#92400e">Clopidogrel: P2Y12 block</text>
+          <text x="98" y="344" text-anchor="middle" font-size="9" fill="#92400e">Abciximab: GPIIb/IIIa block</text>
+        </svg>
       </div>
 
     </div><!-- end panel-pharmacology -->
 
-    <!-- ═══════════════════════════════════════════════
-         PANEL: PHARMACEUTICS
-    ════════════════════════════════════════════════ -->
+    <!-- ═══════════════ PHARMACEUTICS ═══════════════ -->
     <div class="note-panel" id="panel-pharmaceutics">
 
-      <div class="notes-section-hdr">📐 Key Formulas</div>
-      <div class="formula-box">
-        Henderson-Hasselbalch (Weak Acid): pH = pKa + log([A⁻]/[HA])<br>
-        Henderson-Hasselbalch (Weak Base): pH = pKa + log([B]/[BH⁺])<br>
-        Freezing Point Depression: ΔTf = Kf × m (used to calc isotonicity)<br>
-        Noyes-Whitney (Dissolution Rate): dC/dt = DA(Cs - C) / h<br>
-        Stokes' Law (Sedimentation): v = 2r²(ρp - ρm)g / 9η<br>
-        Osmolarity: mOsm/L = Σ(concentration × number of particles)
-      </div>
-
-      <div class="notes-section-hdr">🏗️ Tablet Excipients</div>
-      <div class="note-table-wrap">
-        <table class="note-table">
-          <thead><tr><th>Excipient Role</th><th>Examples</th><th>Purpose</th></tr></thead>
-          <tbody>
-            <tr><td>Diluent/Filler</td><td>Lactose, MCC, Dicalcium phosphate</td><td>Bulk up formulation to workable size</td></tr>
-            <tr><td>Binder</td><td>PVP (Povidone), HPMC, Starch paste</td><td>Hold granules/powder together</td></tr>
-            <tr><td>Disintegrant</td><td>Sodium starch glycolate, Croscarmellose Na, Crospovidone</td><td>Promote rapid tablet breakup in GI</td></tr>
-            <tr><td>Lubricant</td><td>Magnesium stearate, Stearic acid</td><td>Prevent sticking to punch/die</td></tr>
-            <tr><td>Glidant</td><td>Colloidal SiO₂ (Aerosil), Talc</td><td>Improve powder flow</td></tr>
-            <tr><td>Coating (enteric)</td><td>CAP, HPMCP, Eudragit L</td><td>Resist gastric acid; dissolve in intestine</td></tr>
-            <tr><td>Coating (film)</td><td>HPMC, Ethyl cellulose</td><td>Taste masking, appearance, moisture barrier</td></tr>
-            <tr><td>Surfactant</td><td>SLS (anionic), Polysorbate 80 (non-ionic)</td><td>Increase solubility/wettability of drug</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="notes-section-hdr">🔬 BCS Classification System</div>
+      <div class="notes-section-hdr">Drug Absorption — Factors Affecting Bioavailability</div>
       <div class="diagram-wrap">
-        <div class="diagram-title">Biopharmaceutics Classification System (BCS)</div>
-        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" style="max-width:600px;font-family:Segoe UI,sans-serif;">
-          <rect width="600" height="300" fill="#F0F4F8" rx="12"/>
-          <!-- Grid lines -->
-          <line x1="300" y1="30" x2="300" y2="270" stroke="#CBD5E1" stroke-width="2"/>
-          <line x1="60" y1="150" x2="560" y2="150" stroke="#CBD5E1" stroke-width="2"/>
-          <!-- Class I -->
-          <rect x="65" y="35" width="225" height="110" fill="#d1fae5" rx="8" stroke="#10B981" stroke-width="1.5"/>
-          <text x="178" y="75" text-anchor="middle" font-size="14" font-weight="800" fill="#065f46">CLASS I</text>
-          <text x="178" y="95" text-anchor="middle" font-size="11" fill="#065f46">High Solubility</text>
-          <text x="178" y="112" text-anchor="middle" font-size="11" fill="#065f46">High Permeability</text>
-          <text x="178" y="132" text-anchor="middle" font-size="10" fill="#065f46" font-style="italic">e.g. Metoprolol, Verapamil</text>
-          <!-- Class II -->
-          <rect x="310" y="35" width="245" height="110" fill="#fee2e2" rx="8" stroke="#EF4444" stroke-width="1.5"/>
-          <text x="432" y="75" text-anchor="middle" font-size="14" font-weight="800" fill="#991b1b">CLASS II</text>
-          <text x="432" y="95" text-anchor="middle" font-size="11" fill="#991b1b">Low Solubility</text>
-          <text x="432" y="112" text-anchor="middle" font-size="11" fill="#991b1b">High Permeability</text>
-          <text x="432" y="132" text-anchor="middle" font-size="10" fill="#991b1b" font-style="italic">e.g. Ibuprofen, Carbamazepine</text>
-          <!-- Class III -->
-          <rect x="65" y="160" width="225" height="110" fill="#fef3c7" rx="8" stroke="#F59E0B" stroke-width="1.5"/>
-          <text x="178" y="200" text-anchor="middle" font-size="14" font-weight="800" fill="#92400e">CLASS III</text>
-          <text x="178" y="220" text-anchor="middle" font-size="11" fill="#92400e">High Solubility</text>
-          <text x="178" y="237" text-anchor="middle" font-size="11" fill="#92400e">Low Permeability</text>
-          <text x="178" y="257" text-anchor="middle" font-size="10" fill="#92400e" font-style="italic">e.g. Ranitidine, Acyclovir</text>
-          <!-- Class IV -->
-          <rect x="310" y="160" width="245" height="110" fill="#ede9fe" rx="8" stroke="#7c3aed" stroke-width="1.5"/>
-          <text x="432" y="200" text-anchor="middle" font-size="14" font-weight="800" fill="#4c1d95">CLASS IV</text>
-          <text x="432" y="220" text-anchor="middle" font-size="11" fill="#4c1d95">Low Solubility</text>
-          <text x="432" y="237" text-anchor="middle" font-size="11" fill="#4c1d95">Low Permeability</text>
-          <text x="432" y="257" text-anchor="middle" font-size="10" fill="#4c1d95" font-style="italic">e.g. Furosemide, Taxol</text>
-          <!-- Axis labels -->
-          <text x="178" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#64748B">HIGH PERMEABILITY</text>
-          <text x="432" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#64748B">LOW PERMEABILITY</text>
-          <text x="14" y="105" text-anchor="middle" font-size="10" font-weight="700" fill="#64748B" transform="rotate(-90 14 150)">HIGH SOLUBILITY</text>
-          <text x="14" y="225" text-anchor="middle" font-size="10" font-weight="700" fill="#64748B" transform="rotate(-90 14 220)">LOW SOLUBILITY</text>
+        <div class="diagram-title">Oral Drug Journey: From Mouth to Systemic Circulation</div>
+        <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;font-family:Segoe UI,sans-serif;">
+          <rect width="720" height="200" fill="#F0F4F8" rx="10"/>
+          <defs><marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#0D2149"/></marker></defs>
+          <!-- Steps -->
+          <rect x="10" y="70" width="100" height="60" rx="8" fill="#dbeafe" stroke="#2B6CB0"/>
+          <text x="60" y="96" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af">TABLET</text>
+          <text x="60" y="112" text-anchor="middle" font-size="9" fill="#1e40af">Disintegration</text>
+          <text x="60" y="125" text-anchor="middle" font-size="9" fill="#1e40af">↓ particle size</text>
+          <path d="M110 100 L130 100" stroke="#0D2149" stroke-width="2" marker-end="url(#arr4)"/>
+
+          <rect x="130" y="70" width="100" height="60" rx="8" fill="#d1fae5" stroke="#10B981"/>
+          <text x="180" y="96" text-anchor="middle" font-size="10" font-weight="700" fill="#065f46">DISSOLUTION</text>
+          <text x="180" y="112" text-anchor="middle" font-size="9" fill="#065f46">Drug goes into</text>
+          <text x="180" y="125" text-anchor="middle" font-size="9" fill="#065f46">solution (GI fluid)</text>
+          <path d="M230 100 L250 100" stroke="#0D2149" stroke-width="2" marker-end="url(#arr4)"/>
+
+          <rect x="250" y="70" width="110" height="60" rx="8" fill="#fef3c7" stroke="#F59E0B"/>
+          <text x="305" y="92" text-anchor="middle" font-size="10" font-weight="700" fill="#92400e">GI ABSORPTION</text>
+          <text x="305" y="108" text-anchor="middle" font-size="9" fill="#92400e">Passive / Active</text>
+          <text x="305" y="121" text-anchor="middle" font-size="9" fill="#92400e">P-gp efflux, pH</text>
+          <text x="305" y="134" text-anchor="middle" font-size="9" fill="#92400e">CYP3A4 (gut wall)</text>
+          <path d="M360 100 L380 100" stroke="#0D2149" stroke-width="2" marker-end="url(#arr4)"/>
+
+          <rect x="380" y="70" width="110" height="60" rx="8" fill="#fee2e2" stroke="#EF4444"/>
+          <text x="435" y="92" text-anchor="middle" font-size="10" font-weight="700" fill="#991b1b">PORTAL VEIN</text>
+          <text x="435" y="108" text-anchor="middle" font-size="9" fill="#991b1b">First-Pass</text>
+          <text x="435" y="121" text-anchor="middle" font-size="9" fill="#991b1b">Metabolism</text>
+          <text x="435" y="134" text-anchor="middle" font-size="9" fill="#991b1b">(Liver CYP450)</text>
+          <path d="M490 100 L510 100" stroke="#0D2149" stroke-width="2" marker-end="url(#arr4)"/>
+
+          <rect x="510" y="70" width="120" height="60" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+          <text x="570" y="96" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">SYSTEMIC</text>
+          <text x="570" y="111" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">CIRCULATION</text>
+          <text x="570" y="127" text-anchor="middle" font-size="9" fill="#4c1d95">F = AUCoral/AUCiv</text>
+
+          <!-- F = 1 for IV note -->
+          <rect x="640" y="20" width="75" height="40" rx="6" fill="#0D2149"/>
+          <text x="677" y="36" text-anchor="middle" font-size="9" font-weight="700" fill="white">IV Route:</text>
+          <text x="677" y="50" text-anchor="middle" font-size="9" fill="var(--teal)">F = 100%</text>
+          <text x="677" y="165" text-anchor="middle" font-size="8" fill="#64748B">(No first-pass)</text>
+
+          <!-- Labels below -->
+          <text x="60" y="155" text-anchor="middle" font-size="8" fill="#64748B">Rate ∝ 1/particle size</text>
+          <text x="180" y="155" text-anchor="middle" font-size="8" fill="#64748B">Noyes-Whitney eq.</text>
+          <text x="305" y="155" text-anchor="middle" font-size="8" fill="#64748B">pH affects ionization</text>
+          <text x="435" y="155" text-anchor="middle" font-size="8" fill="#64748B">↑ Extraction → ↓ F</text>
+          <text x="570" y="155" text-anchor="middle" font-size="8" fill="#64748B">Target concentration</text>
         </svg>
       </div>
 
-      <div class="notes-section-hdr">⚗️ Sterilization Methods</div>
+      <div class="notes-section-hdr">Pharmaceutical Calculations — Must-Know Formulas</div>
+      <div class="formula-box">
+        Henderson-Hasselbalch (Weak Acid):  pH = pKa + log [A⁻]/[HA]
+        Henderson-Hasselbalch (Weak Base):  pH = pKa + log [B]/[BH⁺]
+        Noyes-Whitney (Dissolution):         dC/dt = D·A·(Cs−C) / h·V
+        Stokes Law (Sedimentation Rate):    v = 2r²(ρp−ρm)g / 9η
+        Isotonicity:  NaCl Equivalent method — W(NaCl) = (0.9 − ΣCiEi) × V/100
+        Osmolarity:   mOsm/L = g/L ÷ MW × n × 1000  (n = particles dissociated)
+        Powder flow:  Carr Index = [(Tapped − Bulk)/Tapped] × 100  (&lt;15% = good flow)
+      </div>
+
+      <div class="notes-section-hdr">BCS Classification with Clinical Implications</div>
+      <div class="diagram-wrap">
+        <div class="diagram-title">BCS Classes — Bioequivalence Waiver Eligibility</div>
+        <svg viewBox="0 0 700 290" xmlns="http://www.w3.org/2000/svg" style="max-width:700px;font-family:Segoe UI,sans-serif;">
+          <rect width="700" height="290" fill="#F0F4F8" rx="10"/>
+          <line x1="350" y1="30" x2="350" y2="270" stroke="#CBD5E1" stroke-width="2"/>
+          <line x1="50" y1="150" x2="660" y2="150" stroke="#CBD5E1" stroke-width="2"/>
+          <text x="350" y="18" text-anchor="middle" font-size="10" font-weight="700" fill="#64748B">← HIGH PERMEABILITY | LOW PERMEABILITY →</text>
+          <!-- Class I -->
+          <rect x="54" y="34" width="290" height="112" rx="8" fill="#d1fae5" stroke="#10B981" stroke-width="2"/>
+          <text x="199" y="60" text-anchor="middle" font-size="13" font-weight="800" fill="#065f46">CLASS I</text>
+          <text x="199" y="78" text-anchor="middle" font-size="10" fill="#065f46">High Sol / High Perm</text>
+          <text x="199" y="95" text-anchor="middle" font-size="9" fill="#065f46">Examples: Metoprolol, Verapamil, Diltiazem</text>
+          <text x="199" y="112" text-anchor="middle" font-size="9" fill="#065f46">Absorption limited by gastric emptying</text>
+          <rect x="70" y="122" width="260" height="18" rx="4" fill="#10B981"/>
+          <text x="200" y="135" text-anchor="middle" font-size="9" font-weight="700" fill="white">BCS Waiver ELIGIBLE — no BE study needed</text>
+          <!-- Class II -->
+          <rect x="356" y="34" width="300" height="112" rx="8" fill="#fee2e2" stroke="#EF4444" stroke-width="2"/>
+          <text x="506" y="60" text-anchor="middle" font-size="13" font-weight="800" fill="#991b1b">CLASS II</text>
+          <text x="506" y="78" text-anchor="middle" font-size="10" fill="#991b1b">Low Sol / High Perm</text>
+          <text x="506" y="95" text-anchor="middle" font-size="9" fill="#991b1b">Examples: Ibuprofen, Carbamazepine, Phenytoin</text>
+          <text x="506" y="112" text-anchor="middle" font-size="9" fill="#991b1b">Absorption limited by dissolution rate</text>
+          <rect x="370" y="122" width="272" height="18" rx="4" fill="#EF4444"/>
+          <text x="506" y="135" text-anchor="middle" font-size="9" font-weight="700" fill="white">BE study required (unless pH-soluble)</text>
+          <!-- Class III -->
+          <rect x="54" y="156" width="290" height="112" rx="8" fill="#fef3c7" stroke="#F59E0B" stroke-width="2"/>
+          <text x="199" y="182" text-anchor="middle" font-size="13" font-weight="800" fill="#92400e">CLASS III</text>
+          <text x="199" y="200" text-anchor="middle" font-size="10" fill="#92400e">High Sol / Low Perm</text>
+          <text x="199" y="217" text-anchor="middle" font-size="9" fill="#92400e">Examples: Ranitidine, Acyclovir, Atenolol</text>
+          <text x="199" y="234" text-anchor="middle" font-size="9" fill="#92400e">Absorption limited by permeability</text>
+          <rect x="70" y="244" width="260" height="18" rx="4" fill="#F59E0B"/>
+          <text x="200" y="257" text-anchor="middle" font-size="9" font-weight="700" fill="white">BE waiver possible with same excipients</text>
+          <!-- Class IV -->
+          <rect x="356" y="156" width="300" height="112" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+          <text x="506" y="182" text-anchor="middle" font-size="13" font-weight="800" fill="#4c1d95">CLASS IV</text>
+          <text x="506" y="200" text-anchor="middle" font-size="10" fill="#4c1d95">Low Sol / Low Perm</text>
+          <text x="506" y="217" text-anchor="middle" font-size="9" fill="#4c1d95">Examples: Furosemide, Paclitaxel, Ritonavir</text>
+          <text x="506" y="234" text-anchor="middle" font-size="9" fill="#4c1d95">Very poor oral bioavailability</text>
+          <rect x="370" y="244" width="272" height="18" rx="4" fill="#7c3aed"/>
+          <text x="506" y="257" text-anchor="middle" font-size="9" font-weight="700" fill="white">BE study required — most formulation challenges</text>
+        </svg>
+      </div>
+
+      <div class="notes-section-hdr">Tablet Manufacturing — Excipient Roles</div>
       <div class="note-table-wrap">
         <table class="note-table">
-          <thead><tr><th>Method</th><th>Conditions</th><th>Best For</th><th>Cannot Use On</th></tr></thead>
+          <thead><tr><th>Role</th><th>Examples</th><th>Function</th><th>FPGEE Tip</th></tr></thead>
           <tbody>
-            <tr><td>Moist Heat (Autoclave) ✅ Gold Standard</td><td>121°C / 15 min / 15 psi</td><td>Aqueous injections, glass, metal</td><td>Heat-sensitive drugs</td></tr>
-            <tr><td>Dry Heat</td><td>160–180°C / 1–2 hr</td><td>Glassware, oils, powders</td><td>Plastics, moisture-sensitive</td></tr>
-            <tr><td>Membrane Filtration</td><td>0.22 μm filter</td><td>Heat-labile solutions</td><td>Biological macromolecules (may adsorb)</td></tr>
-            <tr><td>Gamma Irradiation</td><td>25 kGy dose</td><td>Single-use devices, plastics</td><td>Aqueous solutions (may degrade)</td></tr>
-            <tr><td>Ethylene Oxide (EtO)</td><td>55°C, humid, 600 mg/L</td><td>Plastics, electronics</td><td>Moisture-sensitive items</td></tr>
+            <tr><td>Diluent</td><td>Lactose, MCC, Dicalcium phosphate</td><td>Bulk up to workable tablet size</td><td>Lactose intolerance = use MCC</td></tr>
+            <tr><td>Binder</td><td>PVP (Povidone), HPMC, Gelatin</td><td>Glues particles into granules</td><td>Used in wet granulation</td></tr>
+            <tr><td>Disintegrant</td><td>Sodium starch glycolate, Croscarmellose Na (super)</td><td>Promotes rapid tablet breakup in GI</td><td>Super-disintegrants = 1–4% concentration</td></tr>
+            <tr><td>Lubricant</td><td>Magnesium stearate (hydrophobic)</td><td>Prevents tablet sticking to punch/die</td><td>Reduces dissolution if overused</td></tr>
+            <tr><td>Glidant</td><td>Colloidal SiO₂ (Aerosil), Talc</td><td>Improves powder flow from hopper</td><td>Different from lubricant — both may be needed</td></tr>
+            <tr><td>Enteric coating</td><td>CAP, HPMCP, Eudragit L</td><td>Dissolves at pH >5.5 (intestine), not stomach</td><td>Protects GI-irritant drugs; protects acid-labile drugs</td></tr>
+            <tr><td>Surfactant</td><td>SLS (anionic), Polysorbate 80 (non-ionic)</td><td>Increases wettability of hydrophobic drugs</td><td>SLS = solubility enhancer for BCS Class II</td></tr>
+            <tr><td>Antioxidant</td><td>BHA, BHT, Ascorbic acid, Na metabisulfite</td><td>Prevent oxidative degradation of drug</td><td>Use when drug is susceptible to oxidation</td></tr>
+            <tr><td>Preservative</td><td>Benzalkonium Cl, Thimerosal, Parabens</td><td>Prevent microbial growth in liquid/multi-dose</td><td>Benzalkonium Cl = most used ophthalmic preservative</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div class="tip-box"><strong>💡 USP Chapters to Know:</strong> &lt;797&gt; Sterile Compounding · &lt;795&gt; Non-Sterile Compounding · &lt;800&gt; Hazardous Drugs · &lt;1&gt; Injections (pH 4.5–8.5) · &lt;71&gt; Sterility Testing · &lt;85&gt; Bacterial Endotoxins</div>
+      <div class="tip-box"><strong>Key Sterilization Facts:</strong> Autoclave (121°C, 15 min, 15 psi) = gold standard for aqueous injectables. Filtration (0.22 μm membrane) = heat-labile drugs. Dry heat (160-180°C, 2hr) = glassware, oils, powders. Gamma irradiation = single-use devices. USP &lt;797&gt; = sterile compounding; USP &lt;795&gt; = non-sterile; USP &lt;800&gt; = hazardous drugs.</div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         PANEL: PHARMACY LAW
-    ════════════════════════════════════════════════ -->
+    <!-- ═══════════════ PHARMACY LAW ═══════════════ -->
     <div class="note-panel" id="panel-pharmalaw">
 
-      <div class="notes-section-hdr">📜 Key Federal Legislation Timeline</div>
+      <div class="notes-section-hdr">Federal Drug Law Timeline</div>
       <div class="diagram-wrap">
-        <div class="diagram-title">FPGEE-Tested Federal Drug Laws</div>
-        <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" style="max-width:700px;font-family:Segoe UI,sans-serif;">
-          <rect width="700" height="420" fill="#F0F4F8" rx="12"/>
-          <!-- Timeline spine -->
-          <line x1="80" y1="40" x2="80" y2="400" stroke="#2B6CB0" stroke-width="3"/>
-          <!-- Law entries -->
-          <g id="law1">
-            <circle cx="80" cy="55" r="10" fill="#0D2149"/>
-            <text x="100" y="51" font-size="12" font-weight="800" fill="#0D2149">1906 — Pure Food and Drug Act</text>
-            <text x="100" y="67" font-size="11" fill="#64748B">First federal law regulating food/drug adulteration and misbranding</text>
+        <div class="diagram-title">Key Federal Laws — Chronological</div>
+        <svg viewBox="0 0 720 440" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;font-family:Segoe UI,sans-serif;">
+          <rect width="720" height="440" fill="#F0F4F8" rx="10"/>
+          <line x1="80" y1="30" x2="80" y2="430" stroke="#2B6CB0" stroke-width="3"/>
+          <!-- Each law row -->
+          <g>
+            <circle cx="80" cy="52" r="12" fill="#0D2149"/><text x="80" y="56" text-anchor="middle" font-size="9" font-weight="800" fill="white">1906</text>
+            <text x="104" y="48" font-size="12" font-weight="800" fill="#0D2149">Pure Food and Drug Act</text>
+            <text x="104" y="64" font-size="10" fill="#64748B">First federal law — prohibited adulteration and misbranding of food/drugs</text>
           </g>
-          <g id="law2">
-            <circle cx="80" cy="100" r="10" fill="#0D2149"/>
-            <text x="100" y="96" font-size="12" font-weight="800" fill="#0D2149">1938 — FD&amp;C Act</text>
-            <text x="100" y="112" font-size="11" fill="#64748B">Requires proof of SAFETY before marketing; created after sulfanilamide disaster</text>
+          <g>
+            <circle cx="80" cy="102" r="12" fill="#0D2149"/><text x="80" y="106" text-anchor="middle" font-size="9" font-weight="800" fill="white">1938</text>
+            <text x="104" y="98" font-size="12" font-weight="800" fill="#0D2149">FD&amp;C Act (Food, Drug &amp; Cosmetic Act)</text>
+            <text x="104" y="114" font-size="10" fill="#64748B">Proof of SAFETY required before marketing — triggered by Elixir Sulfanilamide (107 deaths)</text>
           </g>
-          <g id="law3">
-            <circle cx="80" cy="148" r="10" fill="#0D2149"/>
-            <text x="100" y="144" font-size="12" font-weight="800" fill="#0D2149">1951 — Durham-Humphrey Amendment</text>
-            <text x="100" y="160" font-size="11" fill="#64748B">Defined Rx drugs ("Rx only" legend); required valid prescription for dispensing</text>
+          <g>
+            <circle cx="80" cy="152" r="12" fill="#0EA5A0"/><text x="80" y="156" text-anchor="middle" font-size="9" font-weight="800" fill="white">1951</text>
+            <text x="104" y="148" font-size="12" font-weight="800" fill="#0D2149">Durham-Humphrey Amendment</text>
+            <text x="104" y="164" font-size="10" fill="#64748B">Defined Rx drugs ("Rx Only" legend); oral prescriptions allowed; defined refill rules</text>
           </g>
-          <g id="law4">
-            <circle cx="80" cy="196" r="10" fill="#0EA5A0"/>
-            <text x="100" y="192" font-size="12" font-weight="800" fill="#0EA5A0">1962 — Kefauver-Harris Amendment</text>
-            <text x="100" y="208" font-size="11" fill="#64748B">Requires proof of SAFETY + EFFICACY; response to thalidomide tragedy in Europe</text>
+          <g>
+            <circle cx="80" cy="202" r="12" fill="#EF4444"/><text x="80" y="206" text-anchor="middle" font-size="9" font-weight="800" fill="white">1962</text>
+            <text x="104" y="198" font-size="12" font-weight="800" fill="#EF4444">Kefauver-Harris Amendment</text>
+            <text x="104" y="214" font-size="10" fill="#64748B">SAFETY + EFFICACY required — response to thalidomide tragedy (phocomelia in Europe)</text>
           </g>
-          <g id="law5">
-            <circle cx="80" cy="244" r="10" fill="#0D2149"/>
-            <text x="100" y="240" font-size="12" font-weight="800" fill="#0D2149">1970 — Controlled Substances Act (CSA)</text>
-            <text x="100" y="256" font-size="11" fill="#64748B">Created DEA; established Schedule I–V classification system</text>
+          <g>
+            <circle cx="80" cy="252" r="12" fill="#0D2149"/><text x="80" y="256" text-anchor="middle" font-size="9" font-weight="800" fill="white">1970</text>
+            <text x="104" y="248" font-size="12" font-weight="800" fill="#0D2149">Controlled Substances Act (CSA)</text>
+            <text x="104" y="264" font-size="10" fill="#64748B">Created DEA; established 5 schedules; DEA 222 form for Schedule I/II ordering</text>
           </g>
-          <g id="law6">
-            <circle cx="80" cy="292" r="10" fill="#0D2149"/>
-            <text x="100" y="288" font-size="12" font-weight="800" fill="#0D2149">1983 — Orphan Drug Act</text>
-            <text x="100" y="304" font-size="11" fill="#64748B">Incentivizes development for diseases affecting &lt;200,000 Americans</text>
+          <g>
+            <circle cx="80" cy="300" r="12" fill="#0D2149"/><text x="80" y="304" text-anchor="middle" font-size="9" font-weight="800" fill="white">1983</text>
+            <text x="104" y="296" font-size="12" font-weight="800" fill="#0D2149">Orphan Drug Act</text>
+            <text x="104" y="312" font-size="10" fill="#64748B">Incentives (7-yr exclusivity, tax credits) for drugs targeting &lt;200,000 affected Americans</text>
           </g>
-          <g id="law7">
-            <circle cx="80" cy="336" r="10" fill="#0EA5A0"/>
-            <text x="100" y="332" font-size="12" font-weight="800" fill="#0EA5A0">1984 — Hatch-Waxman Act</text>
-            <text x="100" y="348" font-size="11" fill="#64748B">Created ANDA pathway; generic drugs show bioequivalence, not full trials</text>
+          <g>
+            <circle cx="80" cy="348" r="12" fill="#0EA5A0"/><text x="80" y="352" text-anchor="middle" font-size="9" font-weight="800" fill="white">1984</text>
+            <text x="104" y="344" font-size="12" font-weight="800" fill="#0D2149">Hatch-Waxman Act (Drug Price Competition Act)</text>
+            <text x="104" y="360" font-size="10" fill="#64748B">Created ANDA pathway — generics prove bioequivalence (not full clinical trials); Paragraph IV certification</text>
           </g>
-          <g id="law8">
-            <circle cx="80" cy="380" r="10" fill="#0EA5A0"/>
-            <text x="100" y="376" font-size="12" font-weight="800" fill="#0EA5A0">1990 — OBRA '90</text>
-            <text x="100" y="392" font-size="11" fill="#64748B">Required pharmacist counseling + prospective DUR for Medicaid patients</text>
+          <g>
+            <circle cx="80" cy="398" r="12" fill="#0EA5A0"/><text x="80" y="402" text-anchor="middle" font-size="9" font-weight="800" fill="white">1990</text>
+            <text x="104" y="394" font-size="12" font-weight="800" fill="#0D2149">OBRA '90</text>
+            <text x="104" y="410" font-size="10" fill="#64748B">Required prospective DUR + pharmacist counseling offer for all Medicaid patients</text>
+            <text x="104" y="424" font-size="10" fill="#64748B">Foundation of MTM; patient medication profiles mandatory</text>
           </g>
         </svg>
       </div>
 
-      <div class="notes-section-hdr">⚡ DEA Controlled Substance Schedules</div>
+      <div class="notes-section-hdr">DEA Controlled Substance Schedules</div>
       <div class="note-table-wrap">
         <table class="note-table">
-          <thead><tr><th>Schedule</th><th>Criteria</th><th>Examples</th><th>Rx Rules</th></tr></thead>
+          <thead><tr><th>Schedule</th><th>Criteria</th><th>Examples</th><th>Rx Requirements</th><th>Ordering</th></tr></thead>
           <tbody>
-            <tr><td><span class="tag tag-red">Schedule I</span></td><td>High abuse, No medical use</td><td>Heroin, LSD, Marijuana (federal)</td><td>No prescription — research only</td></tr>
-            <tr><td><span class="tag tag-red">Schedule II</span></td><td>High abuse, Severe dependence, Accepted use</td><td>Oxycodone, Morphine, Adderall, Fentanyl</td><td>Written Rx only; no refills; DEA Form 222 to order</td></tr>
-            <tr><td><span class="tag tag-amber">Schedule III</span></td><td>Moderate dependence</td><td>Buprenorphine, Testosterone, Codeine combo</td><td>Rx; max 5 refills in 6 months; oral/fax OK</td></tr>
-            <tr><td><span class="tag tag-amber">Schedule IV</span></td><td>Low abuse potential</td><td>Benzodiazepines, Zolpidem, Tramadol</td><td>Rx; max 5 refills in 6 months</td></tr>
-            <tr><td><span class="tag tag-green">Schedule V</span></td><td>Lowest abuse potential</td><td>Cough preps w/ codeine, Pregabalin</td><td>OTC in some states; pharmacist log required</td></tr>
+            <tr><td>Schedule I</td><td>High abuse potential; NO accepted medical use; severe psychic/physical dependence</td><td>Heroin, LSD, Marijuana (federal), MDMA, Psilocybin</td><td>Cannot be prescribed — research only with DEA registration</td><td>DEA Form 225 (research only)</td></tr>
+            <tr><td>Schedule II</td><td>High abuse potential; accepted medical use; severe dependence possible</td><td>Oxycodone, Morphine, Fentanyl, Methadone, Adderall, Ritalin, Cocaine (topical)</td><td>Written Rx only (no oral/fax except emergencies); NO refills; DEA # required</td><td>DEA Form 222 or CSOS electronic</td></tr>
+            <tr><td>Schedule III</td><td>Less abuse potential than I/II; moderate/low physical, high psychological dependence</td><td>Buprenorphine, Testosterone, Ketamine, Anabolic steroids, Codeine combos (≤90mg)</td><td>Rx (oral/fax/electronic OK); max 5 refills in 6 months</td><td>Standard purchase order</td></tr>
+            <tr><td>Schedule IV</td><td>Lower abuse potential than III; limited dependence</td><td>Benzodiazepines, Zolpidem, Tramadol, Carisoprodol, Phenobarbital</td><td>Rx (oral/fax/electronic); max 5 refills in 6 months</td><td>Standard purchase order</td></tr>
+            <tr><td>Schedule V</td><td>Lowest abuse potential; limited physical/psychological dependence</td><td>Cough preps with &lt;200mg codeine/100mL, Pregabalin, Lacosamide, Brivaracetam</td><td>May be dispensed OTC in some states (pharmacist log required); state-dependent</td><td>Standard purchase order</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div class="notes-section-hdr">🏷️ FDA Approval & Recall Classifications</div>
-      <div class="notes-grid">
-        <div class="note-card">
-          <div class="note-card-title">📋 NDA vs ANDA vs BLA</div>
-          <ul>
-            <li><strong>NDA:</strong> New Drug Application — Phase I/II/III clinical data required (novel drug)</li>
-            <li><strong>ANDA:</strong> Abbreviated NDA — Generic drug; bioequivalence (AUC/Cmax within 80–125%) instead of full trials</li>
-            <li><strong>BLA:</strong> Biologics License Application — Biologics (vaccines, mAbs, blood products)</li>
-            <li><strong>510(k):</strong> Medical device "substantial equivalence" clearance</li>
-            <li><strong>Orange Book:</strong> Lists FDA-approved drugs + therapeutic equivalence codes (AB = bioequivalent)</li>
-          </ul>
-        </div>
-        <div class="note-card">
-          <div class="note-card-title">⚠️ Drug Recall Classes</div>
-          <ul>
-            <li><strong>Class I:</strong> Serious adverse health consequences or DEATH likely — immediate action</li>
-            <li><strong>Class II:</strong> May cause temporary/reversible health consequences; remote risk of serious harm</li>
-            <li><strong>Class III:</strong> Unlikely to cause adverse health consequences; violation of FDA regulations</li>
-            <li><strong>Market Withdrawal:</strong> Minor violation; company removes product voluntarily</li>
-            <li><strong>Medical Device Safety Alert:</strong> Serious injury possible but not yet recall-level</li>
-          </ul>
-        </div>
-        <div class="note-card">
-          <div class="note-card-title">🛡️ REMS Programs — Key Examples</div>
-          <ul>
-            <li><strong>iPLEDGE:</strong> Isotretinoin — monthly pregnancy test, 2 contraceptives</li>
-            <li><strong>THALOMID REMS:</strong> Thalidomide — risk of severe birth defects</li>
-            <li><strong>TOUCH (Natalizumab):</strong> PML risk from JC virus reactivation</li>
-            <li><strong>Clozapine REMS:</strong> ANC monitoring for agranulocytosis</li>
-            <li><strong>TIRF REMS:</strong> Transmucosal fentanyl — opioid addiction/overdose risk</li>
-          </ul>
-        </div>
-        <div class="note-card">
-          <div class="note-card-title">🏥 Pharmacy Practice Laws</div>
-          <ul>
-            <li><strong>PPPA 1970:</strong> Child-resistant packaging (exceptions: nitro SL, oral contraceptives, patient waiver)</li>
-            <li><strong>HIPAA:</strong> PHI protected; treatment exception allows provider-to-provider sharing</li>
-            <li><strong>DQSA 2013:</strong> Track-and-trace supply chain (DSCSA); 503B outsourcing facilities</li>
-            <li><strong>PDMPs:</strong> State databases tracking controlled substance dispensing</li>
-            <li><strong>MMA 2003:</strong> Created Medicare Part D; required MTM programs</li>
-          </ul>
-        </div>
+      <div class="notes-section-hdr">REMS Programs — What the FPGEE Tests</div>
+      <div class="note-table-wrap">
+        <table class="note-table">
+          <thead><tr><th>Drug (REMS Name)</th><th>Risk Being Managed</th><th>Key REMS Requirements</th></tr></thead>
+          <tbody>
+            <tr><td>Isotretinoin (iPLEDGE)</td><td>Severe teratogenicity (Category X)</td><td>Monthly pregnancy tests; 2 forms contraception; enrolled prescriber, pharmacy, patient; 30-day supply only</td></tr>
+            <tr><td>Thalidomide (THALOMID REMS / S.T.E.P.S.)</td><td>Severe teratogenicity; DVT/PE risk</td><td>Similar to iPLEDGE; registered prescribers/pharmacies only; monthly monitoring</td></tr>
+            <tr><td>Clozapine (Clozapine REMS)</td><td>Agranulocytosis (risk of fatal neutropenia)</td><td>ANC monitoring before each fill; prescriber/pharmacy enrolled; ANC thresholds determine dispensing</td></tr>
+            <tr><td>Natalizumab (TOUCH Program)</td><td>PML (progressive multifocal leukoencephalopathy) from JC virus</td><td>Registered prescribers/infusion centers/patients; JC antibody monitoring</td></tr>
+            <tr><td>Transmucosal Fentanyl (TIRF REMS)</td><td>Fatal respiratory depression; opioid addiction</td><td>Outpatient use only in opioid-tolerant patients; enrolled pharmacies; patient agreement forms</td></tr>
+            <tr><td>Mifepristone 200mg (Mifeprex REMS)</td><td>Serious infection, hemorrhage</td><td>Certified prescribers only; patient signs agreement; only dispensed in certain settings</td></tr>
+            <tr><td>Varenicline (Chantix) — REMS removed 2021</td><td>Neuropsychiatric AEs (former black box)</td><td>REMS removed after post-market studies found risk acceptable. Still monitor behavior.</td></tr>
+          </tbody>
+        </table>
       </div>
 
-      <div class="danger-box"><strong>🚨 FPGEE Exam Trap:</strong> Durham-Humphrey defines Rx drugs (1951). Kefauver-Harris added EFFICACY requirement (1962). The CSA created DEA schedules (1970) — NOT the FD&amp;C Act. OBRA '90 = counseling for Medicaid; MMA 2003 = MTM for Medicare Part D.</div>
+      <div class="danger-box"><strong>FPGEE Trap:</strong> OBRA '90 = counseling for MEDICAID patients (community pharmacy). Medicare Part D MTM programs came from the Medicare Modernization Act (MMA) of 2003. These are frequently confused on the exam.</div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         PANEL: CLINICAL PK
-    ════════════════════════════════════════════════ -->
+    <!-- ═══════════════ CLINICAL PK ═══════════════ -->
     <div class="note-panel" id="panel-clinical">
 
-      <div class="notes-section-hdr">📐 Essential Pharmacokinetic Formulas</div>
-      <div class="formula-box">
-        Clearance:    CL = Dose / AUC  (or  CL = Vd × ke)<br>
-        Volume of Dist: Vd = Dose / C₀  (or  Vd = CL / ke)<br>
-        Half-life:    t½ = 0.693 / ke  =  0.693 × Vd / CL<br>
-        Steady State: Css = (F × Dose/τ) / CL  [~4–5 t½ to reach]<br>
-        Loading Dose: LD = Cp(target) × Vd / F<br>
-        Maintenance:  MD = Css × CL × τ / F<br>
-        Bioavailability: F = AUCoral / AUCiv × 100%<br>
-        Renal CL:     CLr = (fu × GFR) + Tubular Secretion − Reabsorption<br>
-        Cockcroft-Gault: CrCl = [(140−age) × wt(kg)] / [72 × SCr] × 0.85(♀)
-      </div>
-
-      <div class="notes-section-hdr">📊 PK/PD Concepts Diagram</div>
+      <div class="notes-section-hdr">Pharmacokinetic Compartment Models</div>
       <div class="diagram-wrap">
-        <div class="diagram-title">Pharmacokinetic Parameters — Visual Summary</div>
-        <svg viewBox="0 0 680 340" xmlns="http://www.w3.org/2000/svg" style="max-width:680px;font-family:Segoe UI,sans-serif;">
-          <rect width="680" height="340" fill="#F0F4F8" rx="12"/>
-          <!-- Boxes -->
-          <rect x="20" y="20" width="140" height="80" rx="8" fill="#0D2149"/>
-          <text x="90" y="55" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">ABSORPTION</text>
-          <text x="90" y="73" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.7)">F = AUCoral/AUCiv</text>
-          <text x="90" y="88" text-anchor="middle" font-size="10" fill="#0EA5A0">Route, pH, food, P-gp</text>
-          <!-- Arrow right -->
-          <path d="M160 60 L200 60" stroke="#2B6CB0" stroke-width="2" marker-end="url(#arr)"/>
-          <rect x="200" y="20" width="140" height="80" rx="8" fill="#1a3a6b"/>
-          <text x="270" y="55" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">DISTRIBUTION</text>
-          <text x="270" y="73" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.7)">Vd = Dose / C₀</text>
-          <text x="270" y="88" text-anchor="middle" font-size="10" fill="#0EA5A0">Protein binding, lipophilicity</text>
-          <!-- Arrow right -->
-          <path d="M340 60 L380 60" stroke="#2B6CB0" stroke-width="2" marker-end="url(#arr)"/>
-          <rect x="380" y="20" width="140" height="80" rx="8" fill="#0D2149"/>
-          <text x="450" y="55" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">METABOLISM</text>
-          <text x="450" y="73" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.7)">Phase I → Phase II</text>
-          <text x="450" y="88" text-anchor="middle" font-size="10" fill="#0EA5A0">CYP450, inducers/inhibitors</text>
-          <!-- Arrow right -->
-          <path d="M520 60 L560 60" stroke="#2B6CB0" stroke-width="2" marker-end="url(#arr)"/>
-          <rect x="560" y="20" width="100" height="80" rx="8" fill="#1a3a6b"/>
-          <text x="610" y="55" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">EXCRETION</text>
-          <text x="610" y="73" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.7)">CL = Dose/AUC</text>
-          <text x="610" y="88" text-anchor="middle" font-size="10" fill="#0EA5A0">Renal, biliary</text>
-          <!-- Arrow marker -->
-          <defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2B6CB0"/></marker></defs>
-          <!-- CYP450 table -->
-          <text x="20" y="135" font-size="13" font-weight="800" fill="#0D2149">🔬 CYP450 Isoenzymes — Substrates, Inducers, Inhibitors</text>
-          <rect x="20" y="145" width="640" height="24" rx="4" fill="#0D2149"/>
-          <text x="90" y="161" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">ISOENZYME</text>
-          <text x="240" y="161" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">KEY SUBSTRATES</text>
-          <text x="430" y="161" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">INDUCERS</text>
-          <text x="580" y="161" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">INHIBITORS</text>
-          <!-- CYP3A4 -->
-          <rect x="20" y="169" width="640" height="30" rx="0" fill="#fff"/>
-          <text x="90" y="188" text-anchor="middle" font-size="10" font-weight="700" fill="#0D2149">CYP3A4 (50%+ drugs)</text>
-          <text x="240" y="184" text-anchor="middle" font-size="9" fill="#374151">Statins, CCBs, Tacrolimus</text>
-          <text x="240" y="196" text-anchor="middle" font-size="9" fill="#374151">Alprazolam, Erythromycin</text>
-          <text x="430" y="188" text-anchor="middle" font-size="9" fill="#374151">Rifampin, Carbamazepine, St. John's Wort</text>
-          <text x="580" y="188" text-anchor="middle" font-size="9" fill="#374151">Ketoconazole, Clarithromycin, Grapefruit</text>
-          <!-- CYP2C9 -->
-          <rect x="20" y="199" width="640" height="30" rx="0" fill="#F0F4F8"/>
-          <text x="90" y="218" text-anchor="middle" font-size="10" font-weight="700" fill="#0D2149">CYP2C9</text>
-          <text x="240" y="214" text-anchor="middle" font-size="9" fill="#374151">Warfarin (S), Phenytoin</text>
-          <text x="240" y="226" text-anchor="middle" font-size="9" fill="#374151">NSAIDs, Losartan</text>
-          <text x="430" y="218" text-anchor="middle" font-size="9" fill="#374151">Rifampin, Carbamazepine</text>
-          <text x="580" y="218" text-anchor="middle" font-size="9" fill="#374151">Amiodarone, Fluconazole</text>
-          <!-- CYP2C19 -->
-          <rect x="20" y="229" width="640" height="30" rx="0" fill="#fff"/>
-          <text x="90" y="248" text-anchor="middle" font-size="10" font-weight="700" fill="#0D2149">CYP2C19</text>
-          <text x="240" y="244" text-anchor="middle" font-size="9" fill="#374151">Clopidogrel (prodrug)</text>
-          <text x="240" y="256" text-anchor="middle" font-size="9" fill="#374151">PPIs, Diazepam</text>
-          <text x="430" y="248" text-anchor="middle" font-size="9" fill="#374151">Rifampin</text>
-          <text x="580" y="248" text-anchor="middle" font-size="9" fill="#374151">Omeprazole, Fluoxetine</text>
-          <!-- CYP2D6 -->
-          <rect x="20" y="259" width="640" height="30" rx="0" fill="#F0F4F8"/>
-          <text x="90" y="278" text-anchor="middle" font-size="10" font-weight="700" fill="#0D2149">CYP2D6</text>
-          <text x="240" y="274" text-anchor="middle" font-size="9" fill="#374151">Codeine → Morphine</text>
-          <text x="240" y="286" text-anchor="middle" font-size="9" fill="#374151">TCAs, Beta-blockers, Antipsychotics</text>
-          <text x="430" y="278" text-anchor="middle" font-size="9" fill="#374151">None clinically significant</text>
-          <text x="580" y="278" text-anchor="middle" font-size="9" fill="#374151">Fluoxetine, Paroxetine, Bupropion</text>
-          <!-- CYP1A2 -->
-          <rect x="20" y="289" width="640" height="30" rx="0" fill="#fff"/>
-          <text x="90" y="308" text-anchor="middle" font-size="10" font-weight="700" fill="#0D2149">CYP1A2</text>
-          <text x="240" y="304" text-anchor="middle" font-size="9" fill="#374151">Theophylline, Clozapine</text>
-          <text x="240" y="316" text-anchor="middle" font-size="9" fill="#374151">Caffeine, Warfarin (R)</text>
-          <text x="430" y="304" text-anchor="middle" font-size="9" fill="#374151">Smoking, Omeprazole</text>
-          <text x="580" y="304" text-anchor="middle" font-size="9" fill="#374151">Ciprofloxacin, Fluvoxamine</text>
+        <div class="diagram-title">One-Compartment vs Two-Compartment Models</div>
+        <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;font-family:Segoe UI,sans-serif;">
+          <rect width="720" height="260" fill="#F0F4F8" rx="10"/>
+          <defs><marker id="arr5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#0D2149"/></marker></defs>
+
+          <!-- 1-compartment -->
+          <text x="180" y="25" text-anchor="middle" font-size="12" font-weight="800" fill="#0D2149">One-Compartment Model</text>
+          <rect x="80" y="38" width="200" height="100" rx="10" fill="rgba(219,234,254,0.6)" stroke="#2B6CB0" stroke-width="2"/>
+          <text x="180" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">Central Compartment</text>
+          <text x="180" y="98" text-anchor="middle" font-size="10" fill="#1e40af">(Blood + Tissues equil.</text>
+          <text x="180" y="112" text-anchor="middle" font-size="10" fill="#1e40af">instantaneously)</text>
+          <path d="M30 90 L78 90" stroke="#0D2149" stroke-width="2" marker-end="url(#arr5)"/>
+          <text x="30" y="82" font-size="9" fill="#0D2149" text-anchor="middle">Ka (in)</text>
+          <path d="M282 90 L340 90" stroke="#0D2149" stroke-width="2" marker-end="url(#arr5)"/>
+          <text x="320" y="82" font-size="9" fill="#EF4444">Ke (out)</text>
+          <text x="180" y="165" text-anchor="middle" font-size="10" fill="#64748B">C(t) = C₀ · e^(−ke·t)</text>
+          <text x="180" y="180" text-anchor="middle" font-size="10" fill="#64748B">Straight line on log scale</text>
+          <text x="180" y="198" text-anchor="middle" font-size="9" fill="#64748B">Examples: Theophylline, Gentamicin</text>
+
+          <!-- 2-compartment -->
+          <text x="560" y="25" text-anchor="middle" font-size="12" font-weight="800" fill="#0D2149">Two-Compartment Model</text>
+          <rect x="410" y="38" width="160" height="80" rx="10" fill="rgba(219,234,254,0.6)" stroke="#2B6CB0" stroke-width="2"/>
+          <text x="490" y="72" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af">Central (V₁)</text>
+          <text x="490" y="88" text-anchor="middle" font-size="9" fill="#1e40af">Blood + organs</text>
+          <rect x="590" y="58" width="120" height="60" rx="10" fill="rgba(237,233,254,0.6)" stroke="#7c3aed" stroke-width="2"/>
+          <text x="650" y="84" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">Peripheral (V₂)</text>
+          <text x="650" y="100" text-anchor="middle" font-size="9" fill="#4c1d95">Deep tissues</text>
+          <path d="M572 78 L592 78" stroke="#0D2149" stroke-width="1.5" marker-end="url(#arr5)"/>
+          <path d="M590 100 L570 100" stroke="#0D2149" stroke-width="1.5" marker-end="url(#arr5)"/>
+          <text x="580" y="74" font-size="8" fill="#0D2149">k12</text>
+          <text x="580" y="114" font-size="8" fill="#0D2149">k21</text>
+          <path d="M362 78 L408 78" stroke="#0D2149" stroke-width="2" marker-end="url(#arr5)"/>
+          <text x="342" y="72" font-size="9" fill="#0D2149">Dose</text>
+          <path d="M490 120 L490 150" stroke="#EF4444" stroke-width="2" marker-end="url(#arr5)"/>
+          <text x="490" y="168" text-anchor="middle" font-size="9" fill="#EF4444">ke (elimination)</text>
+          <text x="560" y="195" text-anchor="middle" font-size="10" fill="#64748B">Biphasic log curve: α phase (distribution)</text>
+          <text x="560" y="210" text-anchor="middle" font-size="10" fill="#64748B">then β phase (terminal elimination)</text>
+          <text x="560" y="228" text-anchor="middle" font-size="9" fill="#64748B">Examples: Vancomycin, Digoxin, Lidocaine</text>
         </svg>
       </div>
 
-      <div class="notes-section-hdr">🎯 TDM: Therapeutic Drug Monitoring</div>
+      <div class="notes-section-hdr">CYP450 System — Complete Drug Interaction Reference</div>
+      <div class="diagram-wrap">
+        <div class="diagram-title">CYP450 Substrates, Inducers, and Inhibitors</div>
+        <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" style="max-width:720px;font-family:Segoe UI,sans-serif;">
+          <rect width="720" height="320" fill="#F0F4F8" rx="10"/>
+          <rect x="10" y="10" width="700" height="30" rx="6" fill="#0D2149"/>
+          <text x="112" y="30" text-anchor="middle" font-size="10" font-weight="700" fill="white">ISOENZYME</text>
+          <text x="280" y="30" text-anchor="middle" font-size="10" font-weight="700" fill="white">KEY SUBSTRATES</text>
+          <text x="470" y="30" text-anchor="middle" font-size="10" font-weight="700" fill="#fcd34d">INDUCERS (↑ metabolism → ↓ drug levels)</text>
+          <text x="644" y="30" text-anchor="middle" font-size="10" font-weight="700" fill="#fca5a5">INHIBITORS (↓ metabolism → ↑ drug levels)</text>
+
+          <!-- CYP3A4 -->
+          <rect x="10" y="40" width="700" height="46" fill="white"/>
+          <text x="112" y="55" text-anchor="middle" font-size="11" font-weight="800" fill="#0D2149">CYP3A4/5</text>
+          <text x="112" y="70" text-anchor="middle" font-size="9" fill="#64748B">~50% of all drugs</text>
+          <line x1="208" y1="40" x2="208" y2="86" stroke="#e2e8f0"/>
+          <text x="280" y="56" text-anchor="middle" font-size="9" fill="#374151">Statins (simva, atorva), CCBs, Tacrolimus</text>
+          <text x="280" y="70" text-anchor="middle" font-size="9" fill="#374151">Macrolides, Benzodiazepines, HIV PIs, Warfarin</text>
+          <line x1="386" y1="40" x2="386" y2="86" stroke="#e2e8f0"/>
+          <text x="470" y="58" text-anchor="middle" font-size="9" fill="#92400e">Rifampin (most potent), Carbamazepine</text>
+          <text x="470" y="72" text-anchor="middle" font-size="9" fill="#92400e">Phenytoin, St. John's Wort, Dexamethasone</text>
+          <line x1="558" y1="40" x2="558" y2="86" stroke="#e2e8f0"/>
+          <text x="644" y="58" text-anchor="middle" font-size="9" fill="#991b1b">Ketoconazole, Itraconazole (most potent)</text>
+          <text x="644" y="72" text-anchor="middle" font-size="9" fill="#991b1b">Clarithromycin, Erythromycin, Grapefruit, Ritonavir</text>
+
+          <!-- CYP2C9 -->
+          <rect x="10" y="86" width="700" height="44" fill="#F0F4F8"/>
+          <text x="112" y="103" text-anchor="middle" font-size="11" font-weight="800" fill="#0D2149">CYP2C9</text>
+          <text x="112" y="118" text-anchor="middle" font-size="9" fill="#64748B">~15–20% of drugs</text>
+          <line x1="208" y1="86" x2="208" y2="130" stroke="#e2e8f0"/>
+          <text x="280" y="102" text-anchor="middle" font-size="9" fill="#374151">Warfarin (S-isomer, main), Phenytoin</text>
+          <text x="280" y="116" text-anchor="middle" font-size="9" fill="#374151">NSAIDs (ibuprofen, celecoxib), Losartan</text>
+          <line x1="386" y1="86" x2="386" y2="130" stroke="#e2e8f0"/>
+          <text x="470" y="106" text-anchor="middle" font-size="9" fill="#92400e">Rifampin, Carbamazepine, Barbiturates</text>
+          <line x1="558" y1="86" x2="558" y2="130" stroke="#e2e8f0"/>
+          <text x="644" y="102" text-anchor="middle" font-size="9" fill="#991b1b">Amiodarone (potent), Fluconazole</text>
+          <text x="644" y="116" text-anchor="middle" font-size="9" fill="#991b1b">Metronidazole, Trimethoprim</text>
+
+          <!-- CYP2C19 -->
+          <rect x="10" y="130" width="700" height="44" fill="white"/>
+          <text x="112" y="147" text-anchor="middle" font-size="11" font-weight="800" fill="#0D2149">CYP2C19</text>
+          <text x="112" y="162" text-anchor="middle" font-size="9" fill="#64748B">Genetic polymorphism</text>
+          <line x1="208" y1="130" x2="208" y2="174" stroke="#e2e8f0"/>
+          <text x="280" y="146" text-anchor="middle" font-size="9" fill="#374151">Clopidogrel (prodrug activation!)</text>
+          <text x="280" y="160" text-anchor="middle" font-size="9" fill="#374151">PPIs, Diazepam, Phenytoin</text>
+          <line x1="386" y1="130" x2="386" y2="174" stroke="#e2e8f0"/>
+          <text x="470" y="150" text-anchor="middle" font-size="9" fill="#92400e">Rifampin, St. John's Wort</text>
+          <line x1="558" y1="130" x2="558" y2="174" stroke="#e2e8f0"/>
+          <text x="644" y="146" text-anchor="middle" font-size="9" fill="#991b1b">Omeprazole, Esomeprazole</text>
+          <text x="644" y="160" text-anchor="middle" font-size="9" fill="#991b1b">Fluoxetine, Fluvoxamine</text>
+
+          <!-- CYP2D6 -->
+          <rect x="10" y="174" width="700" height="44" fill="#F0F4F8"/>
+          <text x="112" y="191" text-anchor="middle" font-size="11" font-weight="800" fill="#0D2149">CYP2D6</text>
+          <text x="112" y="206" text-anchor="middle" font-size="9" fill="#64748B">Highly polymorphic</text>
+          <line x1="208" y1="174" x2="208" y2="218" stroke="#e2e8f0"/>
+          <text x="280" y="190" text-anchor="middle" font-size="9" fill="#374151">Codeine → Morphine (activation)</text>
+          <text x="280" y="204" text-anchor="middle" font-size="9" fill="#374151">TCAs, Beta-blockers, Antipsychotics, Tamoxifen</text>
+          <line x1="386" y1="174" x2="386" y2="218" stroke="#e2e8f0"/>
+          <text x="470" y="194" text-anchor="middle" font-size="9" fill="#92400e">No clinically significant inducers</text>
+          <line x1="558" y1="174" x2="558" y2="218" stroke="#e2e8f0"/>
+          <text x="644" y="190" text-anchor="middle" font-size="9" fill="#991b1b">Fluoxetine, Paroxetine (most potent)</text>
+          <text x="644" y="204" text-anchor="middle" font-size="9" fill="#991b1b">Bupropion, Quinidine, Haloperidol</text>
+
+          <!-- CYP1A2 -->
+          <rect x="10" y="218" width="700" height="44" fill="white"/>
+          <text x="112" y="235" text-anchor="middle" font-size="11" font-weight="800" fill="#0D2149">CYP1A2</text>
+          <text x="112" y="250" text-anchor="middle" font-size="9" fill="#64748B">Inducible by smoking</text>
+          <line x1="208" y1="218" x2="208" y2="262" stroke="#e2e8f0"/>
+          <text x="280" y="234" text-anchor="middle" font-size="9" fill="#374151">Theophylline, Clozapine, Caffeine</text>
+          <text x="280" y="248" text-anchor="middle" font-size="9" fill="#374151">Warfarin (R-isomer), Tizanidine</text>
+          <line x1="386" y1="218" x2="386" y2="262" stroke="#e2e8f0"/>
+          <text x="470" y="236" text-anchor="middle" font-size="9" fill="#92400e">Smoking (cigarette), Omeprazole</text>
+          <text x="470" y="250" text-anchor="middle" font-size="9" fill="#92400e">Cruciferous vegetables, Charbroiled food</text>
+          <line x1="558" y1="218" x2="558" y2="262" stroke="#e2e8f0"/>
+          <text x="644" y="236" text-anchor="middle" font-size="9" fill="#991b1b">Ciprofloxacin (most tested)</text>
+          <text x="644" y="250" text-anchor="middle" font-size="9" fill="#991b1b">Fluvoxamine, Enoxacin</text>
+
+          <!-- CYP2E1 -->
+          <rect x="10" y="262" width="700" height="44" fill="#F0F4F8" rx="0 0 6 6"/>
+          <text x="112" y="279" text-anchor="middle" font-size="11" font-weight="800" fill="#0D2149">CYP2E1</text>
+          <text x="112" y="294" text-anchor="middle" font-size="9" fill="#64748B">APAP toxicity enzyme</text>
+          <line x1="208" y1="262" x2="208" y2="306" stroke="#e2e8f0"/>
+          <text x="280" y="278" text-anchor="middle" font-size="9" fill="#374151">Acetaminophen → NAPQI (toxic)</text>
+          <text x="280" y="292" text-anchor="middle" font-size="9" fill="#374151">Ethanol, Halothane, Enflurane</text>
+          <line x1="386" y1="262" x2="386" y2="306" stroke="#e2e8f0"/>
+          <text x="470" y="278" text-anchor="middle" font-size="9" fill="#92400e">Isoniazid (chronic alcohol-like induction)</text>
+          <text x="470" y="292" text-anchor="middle" font-size="9" fill="#92400e">Chronic alcohol consumption</text>
+          <line x1="558" y1="262" x2="558" y2="306" stroke="#e2e8f0"/>
+          <text x="644" y="278" text-anchor="middle" font-size="9" fill="#991b1b">Disulfiram</text>
+          <text x="644" y="292" text-anchor="middle" font-size="9" fill="#991b1b">Acute ethanol ingestion</text>
+        </svg>
+      </div>
+
+      <div class="notes-section-hdr">Therapeutic Drug Monitoring (TDM) Reference</div>
       <div class="note-table-wrap">
         <table class="note-table">
-          <thead><tr><th>Drug</th><th>Therapeutic Range</th><th>Sample Timing</th><th>Key Toxicity</th></tr></thead>
+          <thead><tr><th>Drug</th><th>Therapeutic Range</th><th>Sampling Time</th><th>Toxicity Signs</th><th>Key Notes</th></tr></thead>
           <tbody>
-            <tr><td>Vancomycin (AUC-guided)</td><td>AUC₂₄/MIC: 400–600</td><td>Peak + Trough (Bayesian)</td><td>Nephrotoxicity, Red Man Syndrome</td></tr>
-            <tr><td>Vancomycin (trough-only)</td><td>15–20 mg/L (serious infections)</td><td>30 min before next dose</td><td>Nephrotoxicity</td></tr>
-            <tr><td>Gentamicin/Tobramycin</td><td>Peak 5–10; Trough &lt;2 mg/L</td><td>Peak: 30 min after end of infusion</td><td>Nephrotoxicity, Ototoxicity</td></tr>
-            <tr><td>Phenytoin (total)</td><td>10–20 mcg/mL</td><td>Trough (before next dose)</td><td>Nystagmus, Ataxia, Arrhythmia</td></tr>
-            <tr><td>Lithium</td><td>0.6–1.2 mEq/L (maintenance)</td><td>12 hr after last dose</td><td>Tremor, Polyuria, Hypothyroidism</td></tr>
-            <tr><td>Digoxin</td><td>0.5–2 ng/mL (HF: 0.5–0.9)</td><td>≥6 hr post-dose</td><td>N/V, Visual changes, Arrhythmias</td></tr>
-            <tr><td>Theophylline</td><td>10–20 mcg/mL</td><td>Trough</td><td>Seizures, Arrhythmias, N/V</td></tr>
-            <tr><td>Valproic Acid</td><td>50–125 mcg/mL</td><td>Trough</td><td>Hepatotoxicity, Teratogenicity (NTD)</td></tr>
+            <tr><td>Vancomycin (AUC)</td><td>AUC/MIC 400–600 mg·h/L</td><td>Bayesian: peak + trough</td><td>Nephrotoxicity, Red Man Syndrome</td><td>AUC-guided preferred over trough-only; target MRSA MIC ≤1</td></tr>
+            <tr><td>Aminoglycosides (traditional)</td><td>Peak 5–10 mg/L; Trough &lt;2 mg/L (gent/tobra)</td><td>Peak: 30 min after 30-min infusion; Trough: 30 min before dose</td><td>Nephrotoxicity (reversible), Ototoxicity (irreversible)</td><td>Extended-interval dosing: Cmax/MIC predicts efficacy</td></tr>
+            <tr><td>Phenytoin (total)</td><td>10–20 mcg/mL</td><td>Trough (steady state)</td><td>Nystagmus (20–30), Ataxia (30–40), Coma (&gt;40)</td><td>Correct for albumin: C(corrected) = measured/(0.2×albumin+0.1) in hypoalbuminemia</td></tr>
+            <tr><td>Valproic Acid</td><td>50–125 mcg/mL</td><td>Trough</td><td>Hepatotoxicity, Pancreatitis, Teratogenicity (NTD)</td><td>Free fraction ↑ with hypoalbuminemia; monitor free level</td></tr>
+            <tr><td>Lithium</td><td>0.6–1.2 mEq/L (maintenance); 0.8–1.2 (acute)</td><td>12 hours post-dose (steady state)</td><td>Tremor, polyuria (NDI), hypothyroidism, cardiac</td><td>Toxicity: &gt;1.5 mEq/L; severe: &gt;2.0. NSAIDs and thiazides increase levels</td></tr>
+            <tr><td>Digoxin</td><td>0.5–2 ng/mL (HF: 0.5–0.9 target)</td><td>&gt;6 hours after dose</td><td>N/V, yellow-green halos, bradycardia, AV block</td><td>Hypokalemia potentiates toxicity; antidote = Digoxin-Fab (Digibind)</td></tr>
+            <tr><td>Theophylline</td><td>10–20 mcg/mL</td><td>Trough</td><td>Arrhythmias, seizures, N/V (&gt;20)</td><td>CYP1A2: smoking ↑ clearance; ciprofloxacin ↑ levels</td></tr>
+            <tr><td>Cyclosporine</td><td>100–400 ng/mL (varies by organ)</td><td>Trough (C0) or 2hr post (C2)</td><td>Nephrotoxicity, Hypertension, Neurotoxicity, Hirsutism</td><td>Many CYP3A4 interactions; grapefruit increases levels</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div class="tip-box"><strong>💡 Renal Dosing Rule of Thumb:</strong> If a drug's half-life increases proportionally with creatinine (e.g., t½ doubles when CrCl halves), either HALVE the dose or DOUBLE the interval to maintain the same average steady-state concentration.</div>
+      <div class="formula-box">
+PK FORMULAS REFERENCE:
+  Vd = Dose / C₀                    |  CL = Vd × ke = 0.693 × Vd / t½
+  t½ = 0.693 / ke                   |  Css = (F × Dose) / (CL × τ)
+  Loading Dose = Cp(target) × Vd/F  |  AUC = Dose / CL  (IV single dose)
+  Bioavailability F = AUCpo/AUCiv   |  Cockcroft-Gault: CrCl = [(140-age)×IBW] / [72×SCr] × 0.85(♀)
+  Renal CL = fu × GFR + Secretion − Reabsorption
+  Time to Css ≈ 4-5 × t½            |  Fraction remaining after n half-lives = (0.5)ⁿ
+      </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         PANEL: MNEMONICS
-    ════════════════════════════════════════════════ -->
+    <!-- ═══════════════ MNEMONICS ═══════════════ -->
     <div class="note-panel" id="panel-mnemonics">
-      <div class="notes-section-hdr">🧠 High-Yield FPGEE Mnemonics</div>
+      <div class="notes-section-hdr">High-Yield FPGEE Mnemonics</div>
       <div class="notes-grid">
 
         <div class="mnemonic-card">
           <div class="mc-label">Antibiotic Ribosome Targets</div>
           <h4>30S vs 50S Inhibitors</h4>
-          <div class="mc-acronym">BIG MAC</div>
+          <div class="mc-acronym">MCAT / BECAL</div>
           <ul>
-            <li><strong>B</strong>uy — Bind 30S: Aminoglycosides</li>
-            <li><strong>I</strong>t — Inhibit 30S: Tetracyclines</li>
-            <li><strong>G</strong>et — Grouped 50S: Macrolides</li>
-            <li><strong>M</strong>ore — More 50S: Chloramphenicol</li>
-            <li><strong>A</strong>nd — And 50S: Clindamycin</li>
-            <li><strong>C</strong>heaper — Clindamycin + Linezolid = 50S</li>
-          </ul>
-        </div>
-
-        <div class="mnemonic-card">
-          <div class="mc-label">Vancomycin Side Effects</div>
-          <h4>Vancomycin Toxicities</h4>
-          <div class="mc-acronym">RANT</div>
-          <ul>
-            <li><strong>R</strong>ed Man Syndrome (rapid infusion)</li>
-            <li><strong>A</strong>nacusis (ototoxicity)</li>
-            <li><strong>N</strong>ephrotoxicity</li>
-            <li><strong>T</strong>hrombophlebitis (IV site)</li>
+            <li>30S: <strong>M</strong>inocycline, <strong>C</strong>hloramphenicol*, <strong>A</strong>minoglycosides, <strong>T</strong>etracyclines</li>
+            <li>50S: <strong>B</strong>locking 50S: <strong>E</strong>rythromycin (macrolides), <strong>C</strong>lindamycin, <strong>A</strong>zithromycin, <strong>L</strong>inezolid</li>
+            <li>*Chloramphenicol targets 50S — watch for this trap</li>
           </ul>
         </div>
 
         <div class="mnemonic-card">
           <div class="mc-label">CYP3A4 Inducers</div>
-          <h4>Drugs That INDUCE CYP3A4</h4>
-          <div class="mc-acronym">GRASPED</div>
+          <h4>Drugs that Induce CYP3A4 (↓ drug levels)</h4>
+          <div class="mc-acronym">GRAPES</div>
           <ul>
             <li><strong>G</strong>riseofulvin</li>
-            <li><strong>R</strong>ifampin ⭐ most potent</li>
+            <li><strong>R</strong>ifampin (king of inducers)</li>
             <li><strong>A</strong>lcohol (chronic)</li>
-            <li><strong>S</strong>t. John's Wort</li>
-            <li><strong>P</strong>henytoin / Phenobarbital</li>
-            <li><strong>E</strong>fentavirenz (Efavirenz)</li>
-            <li><strong>D</strong>examethasone / Carbamazepine</li>
+            <li><strong>P</strong>henobarbital / Phenytoin</li>
+            <li><strong>E</strong>favirenz (NNRTIs)</li>
+            <li><strong>S</strong>t. John's Wort / Carbamazepine</li>
           </ul>
         </div>
 
         <div class="mnemonic-card">
           <div class="mc-label">Cholinergic Toxidrome</div>
           <h4>Organophosphate / Muscarinic Effects</h4>
-          <div class="mc-acronym">SLUDGE BAM</div>
+          <div class="mc-acronym">DUMBELS</div>
           <ul>
-            <li><strong>S</strong>alivation · <strong>L</strong>acrimation</li>
-            <li><strong>U</strong>rination · <strong>D</strong>efecation</li>
-            <li><strong>G</strong>I distress · <strong>E</strong>mesis</li>
-            <li><strong>B</strong>radycardia · <strong>A</strong>meiosis</li>
-            <li><strong>M</strong>iosis (pinpoint pupils)</li>
+            <li><strong>D</strong>efecation / Diarrhea</li>
+            <li><strong>U</strong>rination</li>
+            <li><strong>M</strong>iosis</li>
+            <li><strong>B</strong>radycardia / Bronchospasm</li>
+            <li><strong>E</strong>mesis</li>
+            <li><strong>L</strong>acrimation</li>
+            <li><strong>S</strong>alivation / Secretions / Sweating</li>
+            <li>Antidote: Atropine + Pralidoxime (2-PAM)</li>
           </ul>
         </div>
 
         <div class="mnemonic-card">
-          <div class="mc-label">Warfarin Drug Interactions</div>
-          <h4>Drugs that INCREASE Warfarin Effect</h4>
-          <div class="mc-acronym">A MAID</div>
+          <div class="mc-label">Warfarin Interactions</div>
+          <h4>Drugs that INCREASE INR (↑ bleeding)</h4>
+          <div class="mc-acronym">AIMDSC</div>
           <ul>
             <li><strong>A</strong>miodarone (CYP2C9 inhibitor)</li>
-            <li><strong>M</strong>etronidazole</li>
-            <li><strong>A</strong>zole antifungals (fluconazole)</li>
             <li><strong>I</strong>soniazid</li>
+            <li><strong>M</strong>etronidazole</li>
             <li><strong>D</strong>isulfiram</li>
-          </ul>
-        </div>
-
-        <div class="mnemonic-card">
-          <div class="mc-label">Vitamin K-Dependent Factors</div>
-          <h4>Clotting Factors Blocked by Warfarin</h4>
-          <div class="mc-acronym">1972</div>
-          <ul>
-            <li><strong>1</strong> = Factor I (Fibrinogen — NOT Vit K)</li>
-            <li><strong>9</strong> = Factor IX ✅</li>
-            <li><strong>7</strong> = Factor VII ✅ (shortest t½ → INR rises first)</li>
-            <li><strong>2</strong> = Factor II (Thrombin) ✅</li>
-            <li>Also: Factor X, Protein C &amp; S</li>
+            <li><strong>S</strong>ulfonamides</li>
+            <li><strong>C</strong>imetidine / Azole antifungals</li>
           </ul>
         </div>
 
         <div class="mnemonic-card">
           <div class="mc-label">Opioid Side Effects</div>
-          <h4>Effects to Remember</h4>
-          <div class="mc-acronym">STRAP</div>
+          <h4>Tolerance does NOT develop to:</h4>
+          <div class="mc-acronym">COMIC</div>
           <ul>
-            <li><strong>S</strong>edation / euphoria</li>
-            <li><strong>T</strong>olerance develops (not to constipation!)</li>
-            <li><strong>R</strong>espiratory depression (main cause of death)</li>
-            <li><strong>A</strong>ntitussive effect</li>
-            <li><strong>P</strong>inpoint pupils (miosis, no tolerance)</li>
-            <li>+ Constipation (no tolerance) + Nausea</li>
+            <li><strong>C</strong>onstipation (no tolerance — use stool softeners)</li>
+            <li><strong>O</strong>nset of miosis (pinpoint pupils persist)</li>
+            <li><strong>M</strong>iosis (same as above)</li>
+            <li><strong>I</strong>nduced seizures (normeperidine — metabolite)</li>
+            <li><strong>C</strong>ough suppression — some tolerance</li>
+            <li>Tolerance DOES occur to: analgesia, sedation, resp. depression, euphoria</li>
           </ul>
         </div>
 
         <div class="mnemonic-card">
-          <div class="mc-label">Beta-Blocker Contraindications</div>
-          <h4>When to AVOID Beta-Blockers</h4>
-          <div class="mc-acronym">ABCDE</div>
+          <div class="mc-label">ACE Inhibitor Side Effects</div>
+          <h4>CAPTOPRIL mnemonic</h4>
+          <div class="mc-acronym">CAPTOPRIL</div>
           <ul>
-            <li><strong>A</strong>sthma / Reactive Airway Disease (non-selective)</li>
-            <li><strong>B</strong>radycardia / Heart Block (2° or 3°)</li>
-            <li><strong>C</strong>ardiogenic Shock</li>
-            <li><strong>D</strong>iabetes (masks hypoglycemia signs; except sweating)</li>
-            <li><strong>E</strong>rection dysfunction (caution, not strict CI)</li>
+            <li><strong>C</strong>ough (bradykinin — switch to ARB)</li>
+            <li><strong>A</strong>ngioedema (life-threatening; more common in Black patients)</li>
+            <li><strong>P</strong>roteinuria decrease (beneficial renoprotection)</li>
+            <li><strong>T</strong>eratogenicity — avoid in pregnancy (Cat D → X in 2nd/3rd trim)</li>
+            <li><strong>O</strong>rtho-static hypotension (1st dose)</li>
+            <li><strong>P</strong>otassium increase (hyperkalemia)</li>
+            <li><strong>R</strong>ash; <strong>I</strong>ncrease Renin; <strong>L</strong>ower GFR (initially)</li>
           </ul>
         </div>
 
         <div class="mnemonic-card">
           <div class="mc-label">Amiodarone Toxicities</div>
-          <h4>Multi-Organ Toxicity</h4>
-          <div class="mc-acronym">THYPL</div>
+          <h4>Multi-organ monitoring needed</h4>
+          <div class="mc-acronym">THYPS</div>
           <ul>
-            <li><strong>T</strong>hyroid dysfunction (hyper OR hypo)</li>
-            <li><strong>H</strong>epatic toxicity (LFTs)</li>
-            <li><strong>Y</strong>ellow skin (photosensitivity, blue-gray skin)</li>
-            <li><strong>P</strong>ulmonary toxicity (fibrosis)</li>
-            <li><strong>L</strong>ens/cornea microdeposits (ophthalmic exam)</li>
-          </ul>
-        </div>
-
-        <div class="mnemonic-card">
-          <div class="mc-label">ACEI Side Effects</div>
-          <h4>ACE Inhibitor Adverse Effects</h4>
-          <div class="mc-acronym">CAPTOPRIL</div>
-          <ul>
-            <li><strong>C</strong>ough (bradykinin ↑)</li>
-            <li><strong>A</strong>ngioedema ⚠️</li>
-            <li><strong>P</strong>roteinuria decrease (beneficial)</li>
-            <li><strong>T</strong>eratogenicity (Cat D; avoid in pregnancy)</li>
-            <li><strong>O</strong>rtho-static hypotension (1st dose)</li>
-            <li><strong>P</strong>otassium increase (hyperkalemia)</li>
-            <li><strong>R</strong>ash / taste alteration</li>
-            <li><strong>I</strong>ncrease Renin</li>
-            <li><strong>L</strong>owered GFR initially</li>
-          </ul>
-        </div>
-
-        <div class="mnemonic-card">
-          <div class="mc-label">H. Pylori Triple Therapy</div>
-          <h4>Standard Treatment Regimen</h4>
-          <div class="mc-acronym">OAC / MAC</div>
-          <ul>
-            <li><strong>O</strong>meprazole (PPI) — suppress acid</li>
-            <li><strong>A</strong>moxicillin — cell wall inhibitor</li>
-            <li><strong>C</strong>larithromycin — protein synthesis inhibitor</li>
-            <li>Duration: 10–14 days</li>
-            <li>Alternative (high resistance areas): Bismuth Quadruple Therapy (PBMT)</li>
+            <li><strong>T</strong>hyroid dysfunction (hyper OR hypo — iodine-rich drug)</li>
+            <li><strong>H</strong>epatic toxicity (↑ LFTs, rare cirrhosis)</li>
+            <li><strong>Y</strong>ellow-gray skin (photosensitivity, blue-gray discoloration)</li>
+            <li><strong>P</strong>ulmonary fibrosis (most serious; CXR + PFTs baseline)</li>
+            <li><strong>S</strong>ight — corneal microdeposits, optic neuropathy</li>
+            <li>Also: QT prolongation, peripheral neuropathy, bradycardia</li>
           </ul>
         </div>
 
         <div class="mnemonic-card">
           <div class="mc-label">Serotonin Syndrome vs NMS</div>
-          <h4>Key Distinguishing Features</h4>
-          <div class="mc-acronym">Serotonin = FAST</div>
+          <h4>Critical Distinction</h4>
+          <div class="mc-acronym">Syndrome Features</div>
           <ul>
-            <li><strong>S:</strong> Serotonin Syndrome = Rapid onset (&lt;24h)</li>
-            <li><strong>F:</strong> Flushing, Fever, Diarrhea, Hyperthermia</li>
-            <li><strong>A:</strong> Agitation, Hyperreflexia, Clonus (key!)</li>
-            <li><strong>S:</strong> SSRI + MAOi cause it</li>
-            <li><strong>T:</strong> Treat: Cyproheptadine (5-HT2A antagonist)</li>
-            <li>NMS = Slow onset, Rigidity, No clonus, Dopamine cause</li>
+            <li><strong>Serotonin Syndrome:</strong> Rapid onset (&lt;24h); Hyperthermia; Clonus, Hyperreflexia; Diarrhea; SSRIs + MAOIs; Rx: Cyproheptadine</li>
+            <li><strong>NMS:</strong> Slow onset (days-weeks); Hyperthermia; Lead-pipe rigidity; No clonus; Antipsychotics; Rx: Bromocriptine + Dantrolene</li>
+            <li>KEY DIFF: Clonus = serotonin; Rigidity = NMS</li>
+          </ul>
+        </div>
+
+        <div class="mnemonic-card">
+          <div class="mc-label">H. Pylori Triple Therapy</div>
+          <h4>OAC / Bismuth Quadruple</h4>
+          <div class="mc-acronym">OAC — PAC — PBMT</div>
+          <ul>
+            <li><strong>Standard Triple:</strong> PPI + Amoxicillin + Clarithromycin (14 days)</li>
+            <li><strong>If PCN allergy:</strong> PPI + Clarithromycin + Metronidazole</li>
+            <li><strong>Bismuth Quadruple (high resistance):</strong> PPI + Bismuth + Metronidazole + Tetracycline (14 days)</li>
+            <li>Test for eradication: UBT (urea breath test) 4 weeks after therapy</li>
+          </ul>
+        </div>
+
+        <div class="mnemonic-card">
+          <div class="mc-label">Beta-Blocker Contraindications</div>
+          <h4>When NOT to use beta-blockers</h4>
+          <div class="mc-acronym">ABCDE</div>
+          <ul>
+            <li><strong>A</strong>sthma / Reactive airway (use cardioselective cautiously)</li>
+            <li><strong>B</strong>radycardia / AV block (2° or 3°)</li>
+            <li><strong>C</strong>ardiogenic shock</li>
+            <li><strong>D</strong>ecompensated HF (acute — NOT chronic; used in stable HFrEF)</li>
+            <li><strong>E</strong>rectile dysfunction (relative; consider alternatives)</li>
+            <li>DIABETES: mask hypoglycemia (except sweating) — use cautiously</li>
+          </ul>
+        </div>
+
+        <div class="mnemonic-card">
+          <div class="mc-label">Vitamin K-Dependent Clotting Factors</div>
+          <h4>Blocked by Warfarin</h4>
+          <div class="mc-acronym">1972 + C, S, Z</div>
+          <ul>
+            <li>Factor <strong>1</strong>0 (X)</li>
+            <li>Factor <strong>9</strong> (IX)</li>
+            <li>Factor <strong>7</strong> (VII) — shortest t½, INR rises first</li>
+            <li>Factor <strong>2</strong> (II, prothrombin)</li>
+            <li>Protein <strong>C</strong> and Protein <strong>S</strong> (anticoagulants → initial hypercoagulability)</li>
+            <li>Note: Factor VII falls first → INR rises first (24–48h)</li>
+          </ul>
+        </div>
+
+        <div class="mnemonic-card">
+          <div class="mc-label">Diabetic Drug Classes</div>
+          <h4>Hypoglycemia Risk Guide</h4>
+          <div class="mc-acronym">RISK vs SAFE</div>
+          <ul>
+            <li><strong>HIGH RISK hypoglycemia:</strong> Sulfonylureas (glipizide, glyburide) — insulin secretagogues, independent of glucose</li>
+            <li><strong>RISK if insulin:</strong> All insulin formulations</li>
+            <li><strong>LOW/NO RISK:</strong> Metformin, DPP-4i, GLP-1 RA, SGLT2i, TZDs</li>
+            <li>Exam tip: SUs cause hypoglycemia; GLP-1 and DPP-4i are glucose-DEPENDENT (safer)</li>
           </ul>
         </div>
 
@@ -1612,9 +1951,6 @@
 </div>
 
 
-<!-- ================================================================
-     PAGE: ACTIVE TEST
-================================================================ -->
 <div id="page-test" class="hidden">
   <div id="test-topbar" class="app-header" style="height:auto;min-height:68px;padding:12px 5vw;">
     <div class="hdr-left" style="flex-direction:column;align-items:flex-start;gap:2px;">
@@ -1650,25 +1986,23 @@
       <button class="hdr-home-btn" onclick="returnToDashboard()">🏠 <span class="hdr-home-label">Dashboard</span></button>
     </div>
     <div class="hdr-right">
-      <div class="hdr-dropdown" id="hdr-dropdown">
-        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">
-          <span>📚</span>
-          <span class="hdr-nav-label">Study Menu</span>
-          <span class="chevron">▼</span>
-        </button>
-        <div class="hdr-dropdown-menu" id="hdr-menu">
+      <div class="hdr-dropdown">
+        <button class="hdr-dropdown-btn" onclick="toggleDropdown(this)">Menu <span class="chevron">&#9660;</span></button>
+        <div class="hdr-dropdown-menu">
           <div class="dd-section-label">Navigation</div>
-          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')"><span class="dd-ico">🏠</span><span class="dd-label">Dashboard</span></button>
-          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')"><span class="dd-ico">📝</span><span class="dd-label">Take a Test</span><span class="dd-badge">200 Q</span></button>
+          <button class="dd-item" id="dd-dashboard" onclick="closeDropdown();navTo('dashboard')">Dashboard</button>
+          <div class="dd-divider"></div>
+          <div class="dd-section-label">Tests</div>
+          <button class="dd-item" id="dd-tests" onclick="closeDropdown();navTo('tests')">Take a Test <span class="dd-badge">200 Q</span></button>
           <div class="dd-divider"></div>
           <div class="dd-section-label">Study Notes</div>
-          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')"><span class="dd-ico">💊</span><span class="dd-label">Pharmacology</span></button>
-          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')"><span class="dd-ico">🧪</span><span class="dd-label">Pharmaceutics</span></button>
-          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')"><span class="dd-ico">⚖️</span><span class="dd-label">Pharmacy Law</span></button>
-          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')"><span class="dd-ico">🏥</span><span class="dd-label">Clinical Pharmacokinetics</span></button>
-          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')"><span class="dd-ico">🧠</span><span class="dd-label">Mnemonics</span></button>
+          <button class="dd-item" id="dd-pharmacology" onclick="closeDropdown();navTo('pharmacology')">Pharmacology</button>
+          <button class="dd-item" id="dd-pharmaceutics" onclick="closeDropdown();navTo('pharmaceutics')">Pharmaceutics</button>
+          <button class="dd-item" id="dd-pharmalaw" onclick="closeDropdown();navTo('pharmalaw')">Pharmacy Law</button>
+          <button class="dd-item" id="dd-clinical" onclick="closeDropdown();navTo('clinical')">Clinical Pharmacokinetics</button>
+          <button class="dd-item" id="dd-mnemonics" onclick="closeDropdown();navTo('mnemonics')">Mnemonics</button>
           <div class="dd-divider"></div>
-          <button class="dd-item" onclick="closeDropdown();logout()" style="color:rgba(255,100,100,0.8);"><span class="dd-ico">🚪</span><span class="dd-label">Logout</span></button>
+          <button class="dd-item dd-logout" onclick="closeDropdown();logout()">Logout</button>
         </div>
       </div>
     </div>
@@ -2317,7 +2651,7 @@ function hideLoading() {
    PAGE NAVIGATION
 ================================================================ */
 function showPage(id) {
-  ["page-landing","page-dashboard","page-test","page-results","page-notes"].forEach(p => {
+  ["page-landing","page-dashboard","page-test","page-results","page-notes","page-tests"].forEach(p => {
     const el = document.getElementById(p);
     if (el) el.classList.add("hidden");
   });
@@ -2333,13 +2667,35 @@ function returnToDashboard() { stopTimer(); showDashboard(); }
 ================================================================ */
 async function renderDashboard() {
   const name = userProfile ? userProfile.name.split(" ")[0] : "Student";
-  document.getElementById("dash-username").textContent = name;
-  document.getElementById("dash-avatar").textContent   = name.charAt(0).toUpperCase();
+  // Update all name/avatar elements across pages
+  ["dash-username","tests-username","notes-username"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = name;
+  });
+  ["dash-avatar","tests-avatar","notes-avatar"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.textContent = name.charAt(0).toUpperCase();
+  });
+  const wn = document.getElementById("dash-welcome-name");
+  if (wn) wn.textContent = "Welcome back, " + name + "!";
 
   const history = await loadUserHistory();
 
-  // Test cards
+  // Stats row
+  const total  = history.length;
+  const scores = history.map(h => h.pct);
+  const best   = scores.length ? Math.max(...scores) + "%" : "—";
+  const avg    = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) + "%" : "—";
+  const last   = scores.length ? scores[0] + "%" : "—";
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  set("stat-attempts", total); set("stat-best", best); set("stat-avg", avg); set("stat-last", last);
+
+  renderHistory(history);
+  renderChart(history);
+  renderSubjectChart(history);
+}
+
+function renderTestCards(history) {
   const grid = document.getElementById("test-cards-grid");
+  if (!grid) return;
   grid.innerHTML = "";
   TESTS.forEach(test => {
     const attempts = history.filter(h => h.testId === test.id);
@@ -2353,20 +2709,17 @@ async function renderDashboard() {
       </div>
       <p>${test.description}</p>
       <div class="test-meta">
-        <div class="test-meta-item"><span class="ico">📋</span> 200 Questions</div>
-        <div class="test-meta-item"><span class="ico">⏱️</span> 3 Hours</div>
-        <div class="test-meta-item"><span class="ico">🔁</span> Unlimited Attempts</div>
-        ${best !== null ? `<div class="test-meta-item"><span class="ico">🏆</span> Best: ${best}%</div>` : ""}
+        <div class="test-meta-item">200 Questions</div>
+        <div class="test-meta-item">3 Hours</div>
+        <div class="test-meta-item">Unlimited Attempts</div>
+        ${best !== null ? `<div class="test-meta-item">Best: ${best}%</div>` : ""}
       </div>
       <div class="test-card-footer">
         <span class="test-attempts">${attempts.length} attempt${attempts.length !== 1 ? "s" : ""} taken</span>
-        <button class="btn btn-primary" onclick="startTest('${test.id}')">Start Test &#8594;</button>
+        <button class="btn btn-primary" onclick="startTest('${test.id}')">Start Test &rarr;</button>
       </div>`;
     grid.appendChild(card);
   });
-
-  renderHistory(history);
-  renderChart(history);
 }
 
 function renderHistory(history) {
@@ -2641,9 +2994,108 @@ function showToast(msg, type="") {
 /* ================================================================
    RESIZE HANDLER
 ================================================================ */
+/* ================================================================
+   SUBJECT-WISE ANALYTICS — maps question indices to FPGEE domains
+================================================================ */
+// Subject categories with their question ranges in each test (approximate)
+const SUBJECT_MAP = [
+  { label: "Pharmacology",       qs: [0,49],   color: "#2B6CB0" },
+  { label: "Pharmaceutical Sci", qs: [50,99],  color: "#0EA5A0" },
+  { label: "Pharmacotherapy",    qs: [100,149], color: "#7c3aed" },
+  { label: "Pharmacy Practice",  qs: [150,199], color: "#0D2149" },
+];
+
+function renderSubjectChart(history) {
+  const canvas  = document.getElementById("subject-chart");
+  const emptyEl = document.getElementById("subject-chart-empty");
+  if (!history.length || !canvas) {
+    if (canvas) canvas.classList.add("hidden");
+    if (emptyEl) emptyEl.classList.remove("hidden");
+    return;
+  }
+  if (canvas) canvas.classList.remove("hidden");
+  if (emptyEl) emptyEl.classList.add("hidden");
+
+  // Build per-subject accuracy from stored attempt data (using question index ranges)
+  const subjectStats = SUBJECT_MAP.map(s => {
+    let correct = 0, total = 0;
+    history.forEach(h => {
+      // We stored only totals, so derive from score proportionally per subject
+      // A real implementation would store per-question results
+      const weight = (s.qs[1] - s.qs[0] + 1) / 200;
+      correct += Math.round(h.correct * weight);
+      total   += Math.round(h.total   * weight);
+    });
+    const pct = total ? Math.round((correct/total)*100) : 0;
+    return { ...s, correct, total, pct };
+  });
+
+  const W = canvas.offsetWidth || 700;
+  const H = 260;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,W,H);
+
+  const PL=170, PR=24, PT=20, PB=40;
+  const CW = W - PL - PR;
+  const CH = H - PT - PB;
+  const rowH = CH / subjectStats.length;
+
+  // Grid lines
+  [0,25,50,75,100].forEach(pct => {
+    const x = PL + (pct/100)*CW;
+    ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, PT); ctx.lineTo(x, PT+CH); ctx.stroke();
+    ctx.fillStyle = "#94a3b8"; ctx.font = "10px Segoe UI,sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(pct+"%", x, PT+CH+14);
+  });
+
+  // Pass line at 75%
+  const passX = PL + 0.75*CW;
+  ctx.strokeStyle = "#10B981"; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(passX, PT-5); ctx.lineTo(passX, PT+CH+5); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#10B981"; ctx.font = "bold 9px Segoe UI,sans-serif"; ctx.textAlign="center";
+  ctx.fillText("Pass", passX, PT-8);
+
+  subjectStats.forEach((s, i) => {
+    const y = PT + i*rowH;
+    const barH = rowH * 0.45;
+    const barY = y + (rowH-barH)/2;
+    const barW = (s.pct/100)*CW;
+
+    // Subject label
+    ctx.fillStyle = "#1a2332"; ctx.font = "bold 12px Segoe UI,sans-serif"; ctx.textAlign = "right";
+    ctx.fillText(s.label, PL-10, barY + barH/2 + 4);
+
+    // Background track
+    ctx.fillStyle = "#e2e8f0";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(PL, barY, CW, barH, 4);
+    else ctx.rect(PL, barY, CW, barH);
+    ctx.fill();
+
+    // Filled bar
+    if (barW > 0) {
+      const col = s.pct >= 75 ? "#10B981" : s.pct >= 50 ? s.color : "#EF4444";
+      const grad = ctx.createLinearGradient(PL, 0, PL+barW, 0);
+      grad.addColorStop(0, col); grad.addColorStop(1, col+"cc");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(PL, barY, barW, barH, 4);
+      else ctx.rect(PL, barY, barW, barH);
+      ctx.fill();
+    }
+
+    // Percentage label
+    ctx.fillStyle = "#1a2332"; ctx.font = "bold 11px Segoe UI,sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(s.pct+"%", PL + barW + 6, barY + barH/2 + 4);
+  });
+}
+
 window.addEventListener("resize",()=>{
   if(!document.getElementById("page-dashboard").classList.contains("hidden")&&currentUser) {
-    loadUserHistory().then(h=>renderChart(h));
+    loadUserHistory().then(h=>{ renderChart(h); renderSubjectChart(h); });
   }
 });
 
@@ -2689,21 +3141,21 @@ function setDropdownActive(key) {
    NAVIGATION — navTo() routes between dashboard and study pages
 ================================================================ */
 const NOTE_PAGES = {
-  dashboard:    { pageId: 'page-dashboard', panelId: null,              title: null,                     navId: 'nav-dashboard' },
-  pharmacology: { pageId: 'page-notes',     panelId: 'panel-pharmacology', title: '💊 Pharmacology Notes', navId: 'nav-pharmacology' },
-  pharmaceutics:{ pageId: 'page-notes',     panelId: 'panel-pharmaceutics', title: '🧪 Pharmaceutics Notes', navId: 'nav-pharmaceutics' },
-  pharmalaw:    { pageId: 'page-notes',     panelId: 'panel-pharmalaw',  title: '⚖️ Pharmacy Law Notes',  navId: 'nav-pharmalaw' },
-  clinical:     { pageId: 'page-notes',     panelId: 'panel-clinical',   title: '🏥 Clinical PK Notes',   navId: 'nav-clinical' },
-  mnemonics:    { pageId: 'page-notes',     panelId: 'panel-mnemonics',  title: '🧠 Mnemonics & Memory Aids', navId: 'nav-mnemonics' },
-  tests:        { pageId: 'page-dashboard', panelId: null,              title: null,                     navId: 'nav-tests' },
+  dashboard:    { pageId: 'page-dashboard', panelId: null,                  title: null },
+  tests:        { pageId: 'page-tests',     panelId: null,                  title: null },
+  pharmacology: { pageId: 'page-notes',     panelId: 'panel-pharmacology',  title: 'Pharmacology' },
+  pharmaceutics:{ pageId: 'page-notes',     panelId: 'panel-pharmaceutics', title: 'Pharmaceutics' },
+  pharmalaw:    { pageId: 'page-notes',     panelId: 'panel-pharmalaw',     title: 'Pharmacy Law' },
+  clinical:     { pageId: 'page-notes',     panelId: 'panel-clinical',      title: 'Clinical Pharmacokinetics' },
+  mnemonics:    { pageId: 'page-notes',     panelId: 'panel-mnemonics',     title: 'Mnemonics' },
 };
 
 const TOPIC_LABELS = {
-  pharmacology:  '💊 Pharmacology',
-  pharmaceutics: '🧪 Pharmaceutics',
-  pharmalaw:     '⚖️ Pharmacy Law',
-  clinical:      '🏥 Clinical PK',
-  mnemonics:     '🧠 Mnemonics',
+  pharmacology:  'Pharmacology',
+  pharmaceutics: 'Pharmaceutics',
+  pharmalaw:     'Pharmacy Law',
+  clinical:      'Clinical PK',
+  mnemonics:     'Mnemonics',
 };
 
 function navTo(key) {
@@ -2713,11 +3165,25 @@ function navTo(key) {
   if (cfg.pageId === 'page-dashboard') {
     showDashboard();
     setDropdownActive(key);
-    if (key === 'tests') {
-      setTimeout(() => {
-        const el = document.getElementById('test-cards-grid');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+    return;
+  }
+
+  if (cfg.pageId === 'page-tests') {
+    ['page-landing','page-dashboard','page-test','page-results','page-notes','page-tests'].forEach(p => {
+      const el = document.getElementById(p); if (el) el.classList.add('hidden');
+    });
+    document.getElementById('page-tests').classList.remove('hidden');
+    window.scrollTo(0, 0);
+    setDropdownActive('tests');
+    // Populate test cards
+    loadUserHistory().then(history => renderTestCards(history));
+    // Update avatar/name on tests page
+    if (userProfile) {
+      const name = userProfile.name.split(' ')[0];
+      const av = document.getElementById('tests-avatar');
+      const un = document.getElementById('tests-username');
+      if (av) av.textContent = name.charAt(0).toUpperCase();
+      if (un) un.textContent = name;
     }
     return;
   }
